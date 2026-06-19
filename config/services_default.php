@@ -1,0 +1,68 @@
+<?php
+
+return [
+    [
+        'name'         => 'Corte de Cabelo',
+        'duration_min' => 30,
+        'price'        => 45.00,
+        'color_hex'    => '#334E68',
+        'description'  => 'Corte masculino com acabamento na tesoura e máquina, incluindo lavagem.',
+        'active'       => true,
+    ],
+    [
+        'name'         => 'Barba',
+        'duration_min' => 20,
+        'price'        => 30.00,
+        'color_hex'    => '#486585',
+        'description'  => 'Aparar e modelar a barba com navalha, toalha quente e hidratação.',
+        'active'       => true,
+    ],
+    [
+        'name'         => 'Degradê',
+        'duration_min' => 40,
+        'price'        => 55.00,
+        'color_hex'    => '#102A43',
+        'description'  => 'Corte degradê com transição suave, acabamento preciso e detalhes na navalha.',
+        'active'       => true,
+    ],
+    [
+        'name'         => 'Corte + Barba',
+        'duration_min' => 45,
+        'price'        => 65.00,
+        'color_hex'    => '#243B53',
+        'description'  => 'Combo completo com corte masculino e barba, com acabamento e hidratação.',
+        'active'       => true,
+    ],
+    [
+        'name'         => 'Sobrancelha',
+        'duration_min' => 15,
+        'price'        => 20.00,
+        'color_hex'    => '#627D98',
+        'description'  => 'Design e alinhamento de sobrancelha com navalha e pinça.',
+        'active'       => true,
+    ],
+    [
+        'name'         => 'Corte Infantil',
+        'duration_min' => 20,
+        'price'        => 35.00,
+        'color_hex'    => '#829AB1',
+        'description'  => 'Corte para crianças com atendimento lúdico e confortável.',
+        'active'       => true,
+    ],
+    [
+        'name'         => 'Hidratação Capilar',
+        'duration_min' => 30,
+        'price'        => 40.00,
+        'color_hex'    => '#9FB3C8',
+        'description'  => 'Tratamento capilar com máscara hidratante e massagem no couro cabeludo.',
+        'active'       => true,
+    ],
+    [
+        'name'         => 'Pigmentação',
+        'duration_min' => 45,
+        'price'        => 80.00,
+        'color_hex'    => '#0f172a',
+        'description'  => 'Pigmentação capilar para cobertura de fios brancos ou marcação de linha.',
+        'active'       => true,
+    ],
+];

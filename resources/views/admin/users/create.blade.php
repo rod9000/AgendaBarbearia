@@ -1,0 +1,65 @@
+@extends('layouts.app')
+
+@section('header')
+    <h2 class="font-semibold text-xl text-brand-800 leading-tight">{{ isset($user) ? 'Editar Usuário' : 'Novo Usuário' }}</h2>
+@endsection
+
+@section('content')
+<div class="py-6">
+    <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
+        <div class="card-pastel">
+            <form method="POST" action="{{ isset($user) ? route('admin.users.update', $user) : route('admin.users.store') }}">
+                @csrf
+                @if(isset($user)) @method('PUT') @endif
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-brand-700">Nome</label>
+                    <input type="text" name="name" value="{{ old('name', $user->name ?? '') }}" required class="input-pastel">
+                    @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-brand-700">E-mail</label>
+                    <input type="email" name="email" value="{{ old('email', $user->email ?? '') }}" required class="input-pastel">
+                    @error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-brand-700">Senha{{ isset($user) ? ' (deixe em branco para manter)' : '' }}</label>
+                    <input type="password" name="password" {{ isset($user) ? '' : 'required' }} class="input-pastel">
+                    @error('password') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-brand-700">Telefone</label>
+                    <input type="text" name="phone" value="{{ old('phone', $user->phone ?? '') }}" maxlength="20" class="input-pastel">
+                    @error('phone') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-brand-700">Função</label>
+                    <select name="role" required class="input-pastel">
+                        <option value="admin" {{ old('role', $user->role ?? '') == 'admin' ? 'selected' : '' }}>Admin</option>
+                        <option value="attendant" {{ old('role', $user->role ?? '') == 'attendant' ? 'selected' : '' }}>Barbeiro</option>
+                    </select>
+                    @error('role') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="mb-4">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="active" value="1" {{ old('active', $user->active ?? true) ? 'checked' : '' }} class="rounded border-brand-300 text-brand-600 shadow-sm focus:ring-brand-300">
+                        <span class="text-sm text-brand-700">Ativo</span>
+                    </label>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <a href="{{ route('admin.users.index') }}" class="btn-pastel-secondary">Cancelar</a>
+                    <button type="submit" class="btn-pastel-primary">
+                        {{ isset($user) ? 'Atualizar' : 'Salvar' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
