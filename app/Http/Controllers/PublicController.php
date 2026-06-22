@@ -18,7 +18,23 @@ class PublicController extends Controller
     {
         $services = Service::where('active', true)->orderBy('name')->get();
         $users = User::where('active', true)->where('role', 'attendant')->orderBy('name')->get();
-        return view('public.booking', compact('services', 'users'));
+
+        $combos = [];
+        foreach ($services as $service) {
+            foreach ($users as $user) {
+                $combos[] = (object) [
+                    'service_id'   => $service->id,
+                    'service_name' => $service->name,
+                    'duration_min' => $service->duration_min,
+                    'price'        => $service->price,
+                    'color_hex'    => $service->color_hex,
+                    'user_id'      => $user->id,
+                    'user_name'    => $user->name,
+                ];
+            }
+        }
+
+        return view('public.booking', compact('combos'));
     }
 
     public function searchCustomer(Request $request)
@@ -41,71 +57,92 @@ class PublicController extends Controller
     public function getSlots(Request $request)
     {
         $date = Carbon::parse($request->get('date'));
-        $serviceId = $request->get('service_id');
-        $userId = $request->get('user_id');
-
-        $service = Service::findOrFail($serviceId);
         $dayOfWeek = $date->dayOfWeek;
 
-        $wh = WorkingHour::where('user_id', $userId)
-            ->where('day_of_week', $dayOfWeek)
-            ->where('active', true)
-            ->first();
+        // Accept arrays or single values (backward compat)
+        $userIds = $request->get('user_ids', $request->has('user_id') ? [$request->get('user_id')] : []);
+        $serviceIds = $request->get('service_ids', $request->has('service_id') ? [$request->get('service_id')] : []);
 
-        if (!$wh) {
+        if (empty($userIds) || empty($serviceIds)) {
             return response()->json(['slots' => []]);
         }
 
-        $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $wh->start_time);
-        $endTime = Carbon::parse($date->format('Y-m-d') . ' ' . $wh->end_time);
-        $duration = $service->duration_min;
+        // Max duration across all selected services
+        $services = Service::whereIn('id', $serviceIds)->get();
+        $maxDuration = $services->max('duration_min') ?? 30;
 
-        $existingAppointments = Appointment::where('user_id', $userId)
-            ->whereDate('start', $date)
-            ->whereIn('status', ['scheduled', 'confirmed', 'in_progress'])
-            ->get();
+        // Collect per-user availability
+        $userSlotSets = [];
 
-        $blockedSlots = BlockedSlot::where(function ($q) use ($userId) {
-                $q->where('user_id', $userId)->orWhereNull('user_id');
-            })
-            ->whereDate('start', '<=', $date)
-            ->whereDate('end', '>=', $date)
-            ->get();
+        foreach ($userIds as $uid) {
+            $whs = WorkingHour::where('user_id', $uid)
+                ->where('day_of_week', $dayOfWeek)
+                ->where('active', true)
+                ->get();
 
-        $slots = [];
-        $current = $startTime->copy();
-
-        while ($current->copy()->addMinutes($duration)->lte($endTime)) {
-            $slotEnd = $current->copy()->addMinutes($duration);
-            $available = true;
-
-            foreach ($existingAppointments as $app) {
-                if ($current->lt($app->end) && $slotEnd->gt($app->start)) {
-                    $available = false;
-                    break;
-                }
+            if ($whs->isEmpty()) {
+                return response()->json(['slots' => []]);
             }
 
-            if ($available) {
-                foreach ($blockedSlots as $blocked) {
-                    $blockedStart = Carbon::parse($blocked->start);
-                    $blockedEnd = Carbon::parse($blocked->end);
-                    if ($current->lt($blockedEnd) && $slotEnd->gt($blockedStart)) {
-                        $available = false;
-                        break;
+            $existingAppointments = Appointment::where('user_id', $uid)
+                ->whereDate('start', $date)
+                ->whereIn('status', ['scheduled', 'confirmed', 'in_progress'])
+                ->get();
+
+            $blockedSlots = BlockedSlot::where(function ($q) use ($uid) {
+                    $q->where('user_id', $uid)->orWhereNull('user_id');
+                })
+                ->whereDate('start', '<=', $date)
+                ->whereDate('end', '>=', $date)
+                ->get();
+
+            $userSlots = [];
+
+            foreach ($whs as $wh) {
+                $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $wh->start_time);
+                $endTime = Carbon::parse($date->format('Y-m-d') . ' ' . $wh->end_time);
+                $current = $startTime->copy();
+
+                while ($current->copy()->addMinutes($maxDuration)->lte($endTime)) {
+                    $slotEnd = $current->copy()->addMinutes($maxDuration);
+                    $available = true;
+
+                    foreach ($existingAppointments as $app) {
+                        if ($current->lt($app->end) && $slotEnd->gt($app->start)) {
+                            $available = false;
+                            break;
+                        }
                     }
+
+                    if ($available) {
+                        foreach ($blockedSlots as $blocked) {
+                            $blockedStart = Carbon::parse($blocked->start);
+                            $blockedEnd = Carbon::parse($blocked->end);
+                            if ($current->lt($blockedEnd) && $slotEnd->gt($blockedStart)) {
+                                $available = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($available && $current->gt(Carbon::now())) {
+                        $userSlots[] = $current->format('H:i');
+                    }
+
+                    $current->addMinutes($maxDuration);
                 }
             }
 
-            if ($available && $current->gt(Carbon::now())) {
-                $slots[] = [
-                    'time' => $current->format('H:i'),
-                    'label' => $current->format('H:i'),
-                ];
-            }
-
-            $current->addMinutes($duration);
+            $userSlotSets[] = $userSlots;
         }
+
+        // Intersection: slots available for ALL selected users
+        $common = $userSlotSets[0] ?? [];
+        for ($i = 1; $i < count($userSlotSets); $i++) {
+            $common = array_values(array_intersect($common, $userSlotSets[$i]));
+        }
+
+        $slots = array_map(fn($t) => ['time' => $t, 'label' => $t], $common);
 
         return response()->json(['slots' => $slots]);
     }
@@ -149,40 +186,62 @@ class PublicController extends Controller
         }
 
         $data = $request->validate([
-            'customer_id'   => 'required|exists:customers,id',
-            'user_id'       => 'required|exists:users,id',
-            'service_ids'   => 'required|array|min:1',
-            'service_ids.*' => 'exists:services,id',
-            'date'          => 'required|date',
-            'time'          => 'required|date_format:H:i',
+            'customer_id'        => 'required|exists:customers,id',
+            'combos'             => 'required|array|min:1',
+            'combos.*.service_id' => 'required|exists:services,id',
+            'combos.*.user_id'    => 'required|exists:users,id',
+            'date'               => 'required|date',
+            'time'               => 'required|date_format:H:i',
         ]);
 
-        $services = Service::whereIn('id', $data['service_ids'])->get();
-        $maxDuration = $services->max('duration_min');
-        $start = Carbon::parse($data['date'] . ' ' . $data['time']);
-        $end = $start->copy()->addMinutes($maxDuration);
+        try {
+            $grouped = collect($data['combos'])->groupBy('user_id');
 
-        $appointment = Appointment::create([
-            'customer_id' => $data['customer_id'],
-            'user_id'     => $data['user_id'],
-            'service_id'  => $services->first()->id,
-            'start'       => $start,
-            'end'         => $end,
-            'status'      => 'scheduled',
-            'notes'       => 'Agendamento via site público',
-        ]);
+            foreach ($grouped as $userId => $userCombos) {
+                $serviceIds = $userCombos->pluck('service_id')->toArray();
+                $services = Service::whereIn('id', $serviceIds)->get();
+                $maxDuration = $services->max('duration_min');
+                $start = Carbon::parse($data['date'] . ' ' . $data['time']);
+                $end = $start->copy()->addMinutes($maxDuration);
 
-        $pivotData = [];
-        foreach ($services as $service) {
-            $pivotData[$service->id] = [
-                'price'        => $service->price,
-                'duration_min' => $service->duration_min,
-            ];
+                $appointment = Appointment::create([
+                    'customer_id' => $data['customer_id'],
+                    'user_id'     => $userId,
+                    'service_id'  => $services->first()->id,
+                    'start'       => $start,
+                    'end'         => $end,
+                    'status'      => 'scheduled',
+                    'notes'       => 'Agendamento via site público',
+                ]);
+
+                $pivotData = [];
+                foreach ($services as $service) {
+                    $pivotData[$service->id] = [
+                        'price'        => $service->price,
+                        'duration_min' => $service->duration_min,
+                    ];
+                }
+                $appointment->services()->sync($pivotData);
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Erro ao criar agendamento: ' . $e->getMessage()]);
         }
-        $appointment->services()->sync($pivotData);
 
-        return redirect()->route('public.booking')
-            ->with('success', 'Agendamento realizado com sucesso! Entraremos em contato para confirmar.');
+        $items = [];
+        foreach ($grouped as $userId => $userCombos) {
+            $user = User::find($userId);
+            $services = Service::whereIn('id', $userCombos->pluck('service_id'))->get();
+            foreach ($services as $s) {
+                $items[] = ['service' => $s->name, 'professional' => $user->name];
+            }
+        }
+
+        return redirect()->route('public.sucesso')
+            ->with('agendamento', [
+                'date'  => $data['date'],
+                'time'  => $data['time'],
+                'items' => $items,
+            ]);
     }
 
     public function reagendar($token)
@@ -202,7 +261,22 @@ class PublicController extends Controller
         $services = Service::where('active', true)->orderBy('name')->get();
         $users = User::where('active', true)->where('role', 'attendant')->orderBy('name')->get();
 
-        return view('public.reagendar', compact('appointment', 'services', 'users'));
+        $combos = [];
+        foreach ($services as $service) {
+            foreach ($users as $user) {
+                $combos[] = (object) [
+                    'service_id'   => $service->id,
+                    'service_name' => $service->name,
+                    'duration_min' => $service->duration_min,
+                    'price'        => $service->price,
+                    'color_hex'    => $service->color_hex,
+                    'user_id'      => $user->id,
+                    'user_name'    => $user->name,
+                ];
+            }
+        }
+
+        return view('public.reagendar', compact('appointment', 'combos', 'services', 'users'));
     }
 
     public function reagendarStore(Request $request, $token)
@@ -214,34 +288,65 @@ class PublicController extends Controller
         }
 
         $data = $request->validate([
-            'user_id'     => 'required|exists:users,id',
-            'service_ids' => 'required|array|min:1',
-            'service_ids.*' => 'exists:services,id',
-            'date'        => 'required|date',
-            'time'        => 'required|date_format:H:i',
+            'combos'              => 'required|array|min:1',
+            'combos.*.service_id' => 'required|exists:services,id',
+            'combos.*.user_id'    => 'required|exists:users,id',
+            'date'                => 'required|date',
+            'time'                => 'required|date_format:H:i',
         ]);
 
-        $services = Service::whereIn('id', $data['service_ids'])->get();
-        $maxDuration = $services->max('duration_min');
+        $grouped = collect($data['combos'])->groupBy('user_id');
         $start = Carbon::parse($data['date'] . ' ' . $data['time']);
-        $end = $start->copy()->addMinutes($maxDuration);
 
-        $appointment->update([
-            'user_id' => $data['user_id'],
-            'start'   => $start,
-            'end'     => $end,
-            'status'  => 'scheduled',
-            'notes'   => $appointment->notes . ' | Reagendado pelo cliente em ' . now()->format('d/m/Y H:i'),
-        ]);
+        $createdAppointments = [];
 
-        $pivotData = [];
-        foreach ($services as $service) {
-            $pivotData[$service->id] = [
-                'price'        => $service->price,
-                'duration_min' => $service->duration_min,
-            ];
+        $isFirstUser = true;
+
+        foreach ($grouped as $userId => $userCombos) {
+            $serviceIds = $userCombos->pluck('service_id')->toArray();
+            $services = Service::whereIn('id', $serviceIds)->get();
+            $maxDuration = $services->max('duration_min');
+            $end = $start->copy()->addMinutes($maxDuration);
+
+            if ($isFirstUser) {
+                $appointment->update([
+                    'user_id' => $userId,
+                    'start'   => $start,
+                    'end'     => $end,
+                    'status'  => 'scheduled',
+                    'notes'   => $appointment->notes . ' | Reagendado pelo cliente em ' . now()->format('d/m/Y H:i'),
+                ]);
+                $createdAppointments[] = $appointment;
+            } else {
+                $newApp = Appointment::create([
+                    'customer_id' => $appointment->customer_id,
+                    'user_id'     => $userId,
+                    'service_id'  => $services->first()->id,
+                    'start'       => $start,
+                    'end'         => $end,
+                    'status'      => 'scheduled',
+                    'notes'       => 'Reagendado via link (adicional)',
+                    'parent_id'   => $appointment->id,
+                ]);
+                $createdAppointments[] = $newApp;
+            }
+
+            $pivotData = [];
+            foreach ($services as $service) {
+                $pivotData[$service->id] = [
+                    'price'        => $service->price,
+                    'duration_min' => $service->duration_min,
+                ];
+            }
+
+            if ($isFirstUser) {
+                $appointment->services()->sync($pivotData);
+            } else {
+                $newApp->services()->sync($pivotData);
+            }
+
+            $isFirstUser = false;
         }
-        $appointment->services()->sync($pivotData);
 
         NotificationLog::create([
             'appointment_id' => $appointment->id,
@@ -253,13 +358,15 @@ class PublicController extends Controller
             'sent_at'        => now(),
         ]);
 
-        $serviceList = $services->map(fn($s) => $s->name . ' (' . $s->duration_min . 'min)')->implode("\n");
-        $totalPrice = $services->sum('price');
+        $allServices = Service::whereIn('id', collect($data['combos'])->pluck('service_id')->toArray())->get();
+        $serviceList = $allServices->map(fn($s) => $s->name . ' (' . $s->duration_min . 'min)')->implode("\n");
+        $totalPrice = $allServices->sum('price');
+        $userNames = $grouped->keys()->map(fn($uid) => User::find($uid)?->name)->filter()->implode(', ');
         $confirmLink = url('/confirmar/' . $appointment->confirmation_token);
         $msg = "Olá {$appointment->customer->name}, seu agendamento foi REAGENDADO com sucesso!\n"
              . "Novos detalhes:\n{$serviceList}\n"
              . "Data: {$start->format('d/m/Y H:i')}\n"
-             . "Profissional: {$appointment->user->name}\n"
+             . "Profissional(is): {$userNames}\n"
              . "Valor: R$ " . number_format($totalPrice, 2, ',', '.')
              . "\n\nConfirme sua presença:\n{$confirmLink}";
 
@@ -313,5 +420,14 @@ class PublicController extends Controller
             'message' => 'Presença confirmada com sucesso!',
             'appointment' => $appointment,
         ]);
+    }
+
+    public function sucesso()
+    {
+        if (!session('agendamento')) {
+            return redirect()->route('public.booking');
+        }
+
+        return view('public.sucesso');
     }
 }

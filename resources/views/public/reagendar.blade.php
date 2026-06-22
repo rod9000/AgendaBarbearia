@@ -30,8 +30,8 @@
 
     <div class="min-h-screen flex flex-col">
         <header class="pt-8 pb-4 px-4 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl shadow-lg mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <div class="inline-flex items-center justify-center w-20 h-20 mb-4">
+                <img src="{{ asset('images/barber-logo.png') }}?v={{ env('APP_VERSION', '1.0') }}" alt="Barbearia" class="w-20 h-20 object-contain">
             </div>
             <h1 class="text-2xl font-bold text-stone-800 dark:text-stone-100">Reagendar Horário</h1>
             <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Escolha uma nova data e horário para seu atendimento</p>
@@ -74,46 +74,53 @@
 
                         <div class="space-y-5">
                             <div>
-                                <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">Profissional</label>
-                                <select name="user_id" id="resUser" class="w-full rounded-xl border-2 border-stone-200 dark:border-stone-600 bg-white/80 dark:bg-stone-700 shadow-sm focus:border-brand-400 focus:ring focus:ring-brand-200/30 p-3 text-sm dark:text-stone-200">
-                                    @foreach($users as $u)
-                                        <option value="{{ $u->id }}" @selected($u->id == $appointment->user_id)>{{ $u->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                                <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">Serviço e Profissional</label>
+                                <p class="text-xs text-stone-400 dark:text-stone-500 mb-3">Selecione os serviços e para cada um escolha o profissional</p>
 
-                            <div>
-                                <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">Serviços</label>
-                                <div class="grid grid-cols-1 gap-2" id="servicesGrid">
-                                    @foreach($services as $s)
-                                    <div class="service-card card-hover relative bg-white dark:bg-stone-700 rounded-xl border-2 border-stone-100 dark:border-stone-600 p-3 cursor-pointer {{ $appointment->services->contains($s->id) ? 'selected border-brand-300 bg-brand-50/30' : '' }}" data-value="{{ $s->id }}" onclick="toggleService(this)">
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: {{ $s->color_hex }}22">
-                                                    <span class="w-4 h-4 rounded-full" style="background: {{ $s->color_hex }}"></span>
-                                                </div>
-                                                <div>
-                                                    <div class="font-semibold text-stone-800 dark:text-stone-100 text-sm">{{ $s->name }}</div>
-                                                    <div class="flex items-center gap-2 mt-0.5">
-                                                        <span class="text-xs text-stone-400 dark:text-stone-500">{{ $s->duration_min }} min</span>
-                                                        <span class="text-xs text-stone-300 dark:text-stone-600">•</span>
-                                                        <span class="text-xs font-medium text-brand-600 dark:text-brand-400">R$ {{ number_format($s->price, 2, ',', '.') }}</span>
-                                                    </div>
+                                @php $grouped = collect($combos)->groupBy('service_id'); @endphp
+
+                                <div class="space-y-3" id="servicesGrouped">
+                                    @foreach($grouped as $serviceId => $comboGroup)
+                                    @php $first = $comboGroup[0]; @endphp
+                                    <div class="bg-white dark:bg-stone-700 rounded-xl border-2 border-stone-100 dark:border-stone-600 p-4">
+                                        <div class="flex items-center gap-3 mb-3">
+                                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: {{ $first->color_hex }}22">
+                                                <span class="w-4 h-4 rounded-full" style="background: {{ $first->color_hex }}"></span>
+                                            </div>
+                                            <div>
+                                                <div class="font-semibold text-stone-800 dark:text-stone-100 text-sm">{{ $first->service_name }}</div>
+                                                <div class="flex items-center gap-2 mt-0.5">
+                                                    <span class="text-xs text-stone-400 dark:text-stone-500">{{ $first->duration_min }} min</span>
+                                                    <span class="text-xs text-stone-300 dark:text-stone-600">•</span>
+                                                    <span class="text-xs font-medium text-brand-600 dark:text-brand-400">R$ {{ number_format($first->price, 2, ',', '.') }}</span>
                                                 </div>
                                             </div>
-                                            <div class="check-icon {{ $appointment->services->contains($s->id) ? '' : 'hidden' }} w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center shrink-0">
-                                                <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                        </div>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($comboGroup as $combo)
+                                            @php
+                                                $isSelected = $combo->user_id == $appointment->user_id && $appointment->services->contains('id', $combo->service_id);
+                                            @endphp
+                                            <div class="attendant-chip inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border-2 cursor-pointer transition-all bg-white dark:bg-stone-600 border-stone-200 dark:border-stone-500 text-stone-600 dark:text-stone-300 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20 {{ $isSelected ? 'border-brand-300 bg-brand-50/30 text-brand-700 dark:text-brand-300' : '' }}"
+                                                 data-service-id="{{ $combo->service_id }}" data-user-id="{{ $combo->user_id }}" onclick="toggleAttendant(this)">
+                                                <span class="check-icon {{ $isSelected ? '' : 'hidden' }} w-3.5 h-3.5 rounded-full bg-brand-500 flex items-center justify-center shrink-0">
+                                                    <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"/></svg>
+                                                </span>
+                                                {{ $combo->user_name }}
                                             </div>
+                                            @endforeach
                                         </div>
                                     </div>
                                     @endforeach
                                 </div>
-                                <div id="serviceIdsContainer">
+
+                                <div id="comboIdsContainer">
                                     @foreach($appointment->services as $s)
-                                    <input type="hidden" name="service_ids[]" value="{{ $s->id }}">
+                                    <input type="hidden" name="combos[{{ $loop->index }}][service_id]" value="{{ $s->id }}">
+                                    <input type="hidden" name="combos[{{ $loop->index }}][user_id]" value="{{ $appointment->user_id }}">
                                     @endforeach
                                 </div>
-                                <p id="selectedServicesCount" class="text-xs text-stone-400 dark:text-stone-500 mt-2">{{ $appointment->services->count() }} serviço(s) selecionado(s)</p>
+                                <p id="selectedCombosCount" class="text-xs text-stone-400 dark:text-stone-500 mt-2">{{ $appointment->services->count() }} item(ns) selecionado(s)</p>
                             </div>
 
                             <div>
@@ -159,40 +166,62 @@
     </div>
 
     <script>
-    var selectedServices = [];
+    var selectedCombos = [];
     var selectedDate = null;
     var selectedTime = null;
 
-    // Initialize selected services
-    document.querySelectorAll('.service-card.selected').forEach(function(el) {
-        selectedServices.push(el.dataset.value);
+    // Initialize selected combos from pre-selected chips
+    document.querySelectorAll('.attendant-chip.border-brand-300').forEach(function(el) {
+        selectedCombos.push(el.dataset.serviceId + '_' + el.dataset.userId);
     });
 
-    function toggleService(el) {
-        var value = el.dataset.value;
-        var idx = selectedServices.indexOf(value);
+    function toggleAttendant(el) {
+        var serviceId = el.dataset.serviceId;
+        var userId = el.dataset.userId;
+        var key = serviceId + '_' + userId;
+
+        // Deselect all other chips in the same service card
+        var siblings = el.closest('.rounded-xl').querySelectorAll('.attendant-chip[data-service-id="' + serviceId + '"]');
+        siblings.forEach(function(sib) {
+            var sibKey = sib.dataset.serviceId + '_' + sib.dataset.userId;
+            var sibIdx = selectedCombos.indexOf(sibKey);
+            if (sibKey !== key && sibIdx !== -1) {
+                selectedCombos.splice(sibIdx, 1);
+                sib.classList.remove('border-brand-300', 'bg-brand-50/30', 'text-brand-700');
+                sib.querySelector('.check-icon').classList.add('hidden');
+            }
+        });
+
+        // Toggle clicked chip
+        var idx = selectedCombos.indexOf(key);
         if (idx === -1) {
-            selectedServices.push(value);
-            el.classList.add('selected', 'border-brand-300', 'bg-brand-50/30');
+            selectedCombos.push(key);
+            el.classList.add('border-brand-300', 'bg-brand-50/30', 'text-brand-700');
             el.querySelector('.check-icon').classList.remove('hidden');
         } else {
-            selectedServices.splice(idx, 1);
-            el.classList.remove('selected', 'border-brand-300', 'bg-brand-50/30');
+            selectedCombos.splice(idx, 1);
+            el.classList.remove('border-brand-300', 'bg-brand-50/30', 'text-brand-700');
             el.querySelector('.check-icon').classList.add('hidden');
         }
 
-        var container = document.getElementById('serviceIdsContainer');
+        var container = document.getElementById('comboIdsContainer');
         container.innerHTML = '';
-        selectedServices.forEach(function(sid) {
-            var input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'service_ids[]';
-            input.value = sid;
-            container.appendChild(input);
+        selectedCombos.forEach(function(k, i) {
+            var parts = k.split('_');
+            var s = document.createElement('input');
+            s.type = 'hidden';
+            s.name = 'combos[' + i + '][service_id]';
+            s.value = parts[0];
+            container.appendChild(s);
+            var u = document.createElement('input');
+            u.type = 'hidden';
+            u.name = 'combos[' + i + '][user_id]';
+            u.value = parts[1];
+            container.appendChild(u);
         });
 
-        var count = selectedServices.length;
-        document.getElementById('selectedServicesCount').textContent = count === 0 ? 'Nenhum serviço selecionado' : count + ' serviço(s) selecionado(s)';
+        var count = selectedCombos.length;
+        document.getElementById('selectedCombosCount').textContent = count === 0 ? 'Nenhum item selecionado' : count + ' item(ns) selecionado(s)';
         updateSubmitBtn();
         if (selectedDate && count > 0) loadSlots();
     }
@@ -209,24 +238,31 @@
 
     function updateSubmitBtn() {
         var btn = document.getElementById('submitBtn');
-        if (selectedServices.length > 0 && selectedDate && selectedTime) {
+        if (selectedCombos.length > 0 && selectedDate && selectedTime) {
             btn.disabled = false;
             btn.className = 'w-full bg-gradient-to-r from-brand-400 to-brand-600 text-white font-semibold rounded-xl py-3 hover:from-brand-500 hover:to-brand-700 transition-all duration-200 shadow-sm text-sm cursor-pointer';
             btn.textContent = 'Confirmar Reagendamento';
         } else {
             btn.disabled = true;
             btn.className = 'w-full bg-stone-200 dark:bg-stone-600 text-stone-400 dark:text-stone-500 font-semibold rounded-xl py-3 cursor-not-allowed transition-all duration-200 text-sm';
-            btn.textContent = selectedServices.length === 0 ? 'Selecione ao menos um serviço' : (!selectedDate ? 'Selecione uma data' : 'Selecione um horário');
+            btn.textContent = selectedCombos.length === 0 ? 'Selecione ao menos um item' : (!selectedDate ? 'Selecione uma data' : 'Selecione um horário');
         }
     }
 
     function loadSlots() {
-        var userId = document.getElementById('resUser').value;
-        var serviceId = selectedServices.length > 0 ? selectedServices[0] : '';
+        if (selectedCombos.length === 0) return;
         var dateInput = document.getElementById('dateSelect');
         var date = dateInput.dataset.iso || dateInput.value;
+        if (!date) return;
 
-        if (!userId || !serviceId || !date) return;
+        var userIds = [];
+        var serviceIds = [];
+        selectedCombos.forEach(function(key) {
+            var parts = key.split('_');
+            if (userIds.indexOf(parts[1]) === -1) userIds.push(parts[1]);
+            if (serviceIds.indexOf(parts[0]) === -1) serviceIds.push(parts[0]);
+        });
+        if (userIds.length === 0 || serviceIds.length === 0) return;
 
         var grid = document.getElementById('timeSlotsGrid');
         var loading = document.getElementById('loadingSlots');
@@ -238,7 +274,11 @@
         grid.innerHTML = '';
         loading.classList.remove('hidden');
 
-        fetch('/agendar/slots?user_id=' + userId + '&service_id=' + serviceId + '&date=' + date)
+        var params = 'date=' + encodeURIComponent(date);
+        userIds.forEach(function(uid) { params += '&user_ids[]=' + encodeURIComponent(uid); });
+        serviceIds.forEach(function(sid) { params += '&service_ids[]=' + encodeURIComponent(sid); });
+
+        fetch('/agendar/slots?' + params)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 loading.classList.add('hidden');
@@ -261,10 +301,6 @@
                 grid.innerHTML = '<div class="col-span-full text-center py-8 text-red-400 text-sm">Erro ao carregar horários. Tente novamente.</div>';
             });
     }
-
-    document.getElementById('resUser').addEventListener('change', function() {
-        if (selectedDate && selectedServices.length > 0) loadSlots();
-    });
 
     document.addEventListener('DOMContentLoaded', function() {
         var dateInput = document.getElementById('dateSelect');
@@ -340,7 +376,7 @@
     document.getElementById('rescheduleForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        if (!selectedServices.length || !selectedDate || !selectedTime) return;
+        if (!selectedCombos.length || !selectedDate || !selectedTime) return;
 
         var btn = document.getElementById('submitBtn');
         btn.disabled = true;
@@ -348,11 +384,12 @@
 
         var token = document.querySelector('input[name="token"]').value;
         var formData = new FormData();
-        formData.append('user_id', document.getElementById('resUser').value);
         formData.append('date', selectedDate);
         formData.append('time', selectedTime);
-        selectedServices.forEach(function(sid) {
-            formData.append('service_ids[]', sid);
+        selectedCombos.forEach(function(key, i) {
+            var parts = key.split('_');
+            formData.append('combos[' + i + '][service_id]', parts[0]);
+            formData.append('combos[' + i + '][user_id]', parts[1]);
         });
 
         document.getElementById('errorMsg').classList.add('hidden');

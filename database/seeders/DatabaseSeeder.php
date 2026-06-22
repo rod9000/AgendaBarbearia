@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -9,6 +10,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run()
     {
+        $this->call(CompanySeeder::class);
+
+        $company = Company::first();
+
         User::create([
             'name' => 'Administrador',
             'email' => 'admin@agenda.com',
@@ -16,6 +21,7 @@ class DatabaseSeeder extends Seeder
             'phone' => '(11) 99999-8888',
             'role' => 'admin',
             'active' => true,
+            'company_id' => $company->id,
         ]);
 
         User::create([
@@ -25,6 +31,7 @@ class DatabaseSeeder extends Seeder
             'phone' => '(11) 97777-6666',
             'role' => 'attendant',
             'active' => true,
+            'company_id' => $company->id,
         ]);
 
         $this->call(ServiceSeeder::class);

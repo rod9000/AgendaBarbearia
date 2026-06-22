@@ -65,11 +65,11 @@
 
     <div class="min-h-screen flex flex-col">
         <header class="pt-8 pb-4 px-4 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl shadow-lg mb-4">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <div class="inline-flex items-center justify-center w-20 h-20 mb-4">
+                <img src="{{ asset('images/barber-logo.png') }}?v={{ env('APP_VERSION', '1.0') }}" alt="Barbearia" class="w-20 h-20 object-contain">
             </div>
             <h1 class="text-2xl font-bold text-stone-800 dark:text-stone-100">Agende seu Horário</h1>
-            <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Escolha o profissional, serviço e melhor horário para você</p>
+            <p class="text-stone-500 dark:text-stone-400 text-sm mt-1">Escolha o serviço, profissional e melhor horário para você</p>
         </header>
 
         <main class="flex-1 px-4 pb-12">
@@ -87,16 +87,33 @@
                                 <div class="step-dot" data-step="2"><div class="w-8 h-8 rounded-full bg-stone-200 dark:bg-stone-600 text-stone-500 dark:text-stone-300 flex items-center justify-center text-xs font-bold">2</div></div>
                                 <div class="step-line" data-step="2"><div class="h-0.5 w-8 bg-stone-200 dark:bg-stone-600"></div></div>
                                 <div class="step-dot" data-step="3"><div class="w-8 h-8 rounded-full bg-stone-200 dark:bg-stone-600 text-stone-500 dark:text-stone-300 flex items-center justify-center text-xs font-bold">3</div></div>
-                                <div class="step-line" data-step="3"><div class="h-0.5 w-8 bg-stone-200 dark:bg-stone-600"></div></div>
-                                <div class="step-dot" data-step="4"><div class="w-8 h-8 rounded-full bg-stone-200 dark:bg-stone-600 text-stone-500 dark:text-stone-300 flex items-center justify-center text-xs font-bold">4</div></div>
                             </div>
                             <span id="stepLabel" class="text-xs font-medium text-stone-400">Cliente</span>
                         </div>
+
+                        {{-- Error summary --}}
+                        <div id="formErrorSummary" class="hidden mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                            <ul id="formErrorList" class="text-sm text-red-600 dark:text-red-400 space-y-1"></ul>
+                        </div>
+
+                        @if($errors->any())
+                        <div class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                            <ul class="text-sm text-red-600 dark:text-red-400 space-y-1">
+                                @foreach($errors->all() as $err)
+                                <li>{{ $err }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @endif
 
                         {{-- STEP 1: Buscar ou Cadastrar Cliente --}}
                         <div id="step1" class="step-content step-enter">
                             <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-1">Identifique-se</h2>
                             <p class="text-sm text-stone-400 dark:text-stone-500 mb-5">Informe seu nome e CPF para continuar</p>
+
+                            <div id="step1Error" class="hidden mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3">
+                                <p id="step1ErrorText" class="text-sm text-red-600 dark:text-red-400"></p>
+                            </div>
 
                             <div class="space-y-4">
                                 <div>
@@ -134,77 +151,57 @@
                             </button>
                         </div>
 
-                        {{-- STEP 2: Selecionar Atendente --}}
+                        {{-- STEP 2: Selecionar Serviço + Profissional (agrupado) --}}
                         <div id="step2" class="step-content hidden">
-                            <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-1">Escolha o Barbeiro</h2>
-                            <p class="text-sm text-stone-400 dark:text-stone-500 mb-5">Quem você gostaria de atender você?</p>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="professionalsGrid">
-                                @foreach($users as $u)
-                                <div class="professional-card card-hover relative bg-white dark:bg-stone-700 rounded-xl border-2 border-stone-100 dark:border-stone-600 p-4 cursor-pointer" data-value="{{ $u->id }}" onclick="selectProfessional(this)">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-700 dark:to-brand-800 flex items-center justify-center text-brand-600 dark:text-brand-300 font-bold text-lg shrink-0">
-                                            {{ strtoupper(substr($u->name, 0, 2)) }}
+                            <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-1">Escolha os Serviços e Profissionais</h2>
+                            <p class="text-sm text-stone-400 dark:text-stone-500 mb-5">Selecione os serviços e para cada um escolha o profissional</p>
+
+                            @php $grouped = collect($combos)->groupBy('service_id'); @endphp
+
+                            <div class="space-y-3" id="servicesGrouped">
+                                @foreach($grouped as $serviceId => $comboGroup)
+                                @php $first = $comboGroup[0]; @endphp
+                                <div class="bg-white dark:bg-stone-700 rounded-xl border-2 border-stone-100 dark:border-stone-600 p-4">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: {{ $first->color_hex }}22">
+                                            <span class="w-4 h-4 rounded-full" style="background: {{ $first->color_hex }}"></span>
                                         </div>
                                         <div>
-                                            <div class="font-semibold text-stone-800 dark:text-stone-100 text-sm">{{ $u->name }}</div>
-                                            <div class="text-xs text-stone-400 dark:text-stone-500">Barbeiro</div>
+                                            <div class="font-semibold text-stone-800 dark:text-stone-100 text-sm">{{ $first->service_name }}</div>
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                <span class="text-xs text-stone-400 dark:text-stone-500">{{ $first->duration_min }} min</span>
+                                                <span class="text-xs text-stone-300 dark:text-stone-600">•</span>
+                                                <span class="text-xs font-medium text-brand-600 dark:text-brand-400">R$ {{ number_format($first->price, 2, ',', '.') }}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="check-icon hidden absolute top-3 right-3 w-5 h-5 bg-brand-500 rounded-full flex items-center justify-center">
-                                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($comboGroup as $combo)
+                                        <div class="attendant-chip inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border-2 cursor-pointer transition-all bg-white dark:bg-stone-600 border-stone-200 dark:border-stone-500 text-stone-600 dark:text-stone-300 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20"
+                                             data-service-id="{{ $combo->service_id }}" data-user-id="{{ $combo->user_id }}" onclick="toggleAttendant(this)">
+                                            <span class="check-icon hidden w-3.5 h-3.5 rounded-full bg-brand-500 flex items-center justify-center shrink-0">
+                                                <svg class="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"/></svg>
+                                            </span>
+                                            {{ $combo->user_name }}
+                                        </div>
+                                        @endforeach
                                     </div>
                                 </div>
                                 @endforeach
                             </div>
-                            <input type="hidden" name="user_id" id="user_id" value="">
+
+                            <p id="selectedCombosCount" class="text-xs text-stone-400 dark:text-stone-500 mt-3">Nenhum item selecionado</p>
+                            <div id="comboIdsContainer"></div>
                             <div class="flex gap-3 mt-6">
                                 <button type="button" onclick="prevStep(1)" class="flex-1 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 font-medium rounded-xl py-3 hover:bg-stone-200 dark:hover:bg-stone-600 transition-all duration-200 text-sm">Voltar</button>
                                 <button type="button" onclick="nextStep(3)" disabled id="step2Next" class="flex-1 bg-stone-200 dark:bg-stone-600 text-stone-400 dark:text-stone-500 font-semibold rounded-xl py-3 cursor-not-allowed transition-all duration-200 text-sm">
-                                    Selecione uma atendente
+                                    Selecione ao menos um item
                                 </button>
                             </div>
                         </div>
 
-                        {{-- STEP 3: Selecionar Servico --}}
+                        {{-- STEP 3: Data e Horario --}}
                         <div id="step3" class="step-content hidden">
-                            <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-1">Escolha os Serviços</h2>
-                            <p class="text-sm text-stone-400 dark:text-stone-500 mb-5">Selecione um ou mais procedimentos</p>
-                            <div class="grid grid-cols-1 gap-3" id="servicesGrid">
-                                @foreach($services as $s)
-                                <div class="service-card card-hover relative bg-white dark:bg-stone-700 rounded-xl border-2 border-stone-100 dark:border-stone-600 p-4 cursor-pointer" data-value="{{ $s->id }}" onclick="toggleService(this)">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: {{ $s->color_hex }}22">
-                                                <span class="w-4 h-4 rounded-full" style="background: {{ $s->color_hex }}"></span>
-                                            </div>
-                                            <div>
-                                                <div class="font-semibold text-stone-800 dark:text-stone-100 text-sm">{{ $s->name }}</div>
-                                                <div class="flex items-center gap-2 mt-0.5">
-                                                    <span class="text-xs text-stone-400 dark:text-stone-500">{{ $s->duration_min }} min</span>
-                                                    <span class="text-xs text-stone-300 dark:text-stone-600">•</span>
-                                                    <span class="text-xs font-medium text-brand-600 dark:text-brand-400">R$ {{ number_format($s->price, 2, ',', '.') }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="check-icon hidden w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center shrink-0">
-                                            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </div>
-                            <p id="selectedServicesCount" class="text-xs text-stone-400 dark:text-stone-500 mt-2">Nenhum serviço selecionado</p>
-                            <div id="serviceIdsContainer"></div>
-                            <div class="flex gap-3 mt-6">
-                                <button type="button" onclick="prevStep(2)" class="flex-1 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 font-medium rounded-xl py-3 hover:bg-stone-200 dark:hover:bg-stone-600 transition-all duration-200 text-sm">Voltar</button>
-                                <button type="button" onclick="nextStep(4)" disabled id="step3Next" class="flex-1 bg-stone-200 dark:bg-stone-600 text-stone-400 dark:text-stone-500 font-semibold rounded-xl py-3 cursor-not-allowed transition-all duration-200 text-sm">
-                                    Selecione ao menos um serviço
-                                </button>
-                            </div>
-                        </div>
-
-                        {{-- STEP 4: Data e Horario --}}
-                        <div id="step4" class="step-content hidden">
                             <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-1">Escolha a Data e Horário</h2>
                             <p class="text-sm text-stone-400 dark:text-stone-500 mb-5">Selecione o melhor dia e horário disponível</p>
 
@@ -236,15 +233,14 @@
                                 <h3 class="text-xs font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-wider mb-3">Resumo do Agendamento</h3>
                                 <div class="space-y-2 text-sm">
                                     <div class="flex items-center gap-2"><span class="text-stone-400 dark:text-stone-500 w-20 shrink-0">Cliente:</span><span class="font-medium text-stone-800 dark:text-stone-100" id="resumoCliente">—</span></div>
-                                    <div class="flex items-center gap-2"><span class="text-stone-400 dark:text-stone-500 w-20 shrink-0">Barbeiro:</span><span class="font-medium text-stone-800 dark:text-stone-100" id="resumoAtendente">—</span></div>
-                                    <div class="flex items-center gap-2"><span class="text-stone-400 dark:text-stone-500 w-20 shrink-0">Serviço:</span><span class="font-medium text-stone-800 dark:text-stone-100" id="resumoServico">—</span></div>
+                                    <div class="flex items-center gap-2"><span class="text-stone-400 dark:text-stone-500 w-20 shrink-0">Serviço(s):</span><span class="font-medium text-stone-800 dark:text-stone-100" id="resumoServico">—</span></div>
                                     <div class="flex items-center gap-2"><span class="text-stone-400 dark:text-stone-500 w-20 shrink-0">Data/Hora:</span><span class="font-medium text-stone-800 dark:text-stone-100" id="resumoData">—</span></div>
                                 </div>
                             </div>
 
                             <div class="flex gap-3 mt-6">
-                                <button type="button" onclick="prevStep(3)" class="flex-1 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 font-medium rounded-xl py-3 hover:bg-stone-200 dark:hover:bg-stone-600 transition-all duration-200 text-sm">Voltar</button>
-                                <button type="submit" disabled id="step4Submit" class="flex-1 bg-stone-200 dark:bg-stone-600 text-stone-400 dark:text-stone-500 font-semibold rounded-xl py-3 cursor-not-allowed transition-all duration-200 text-sm">
+                                <button type="button" onclick="prevStep(2)" class="flex-1 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 font-medium rounded-xl py-3 hover:bg-stone-200 dark:hover:bg-stone-600 transition-all duration-200 text-sm">Voltar</button>
+                                <button type="submit" disabled id="step3Submit" class="flex-1 bg-stone-200 dark:bg-stone-600 text-stone-400 dark:text-stone-500 font-semibold rounded-xl py-3 cursor-not-allowed transition-all duration-200 text-sm">
                                     Selecione um horário
                                 </button>
                             </div>
@@ -265,14 +261,32 @@
     </div>
 
     <script>
-    var stepLabels = ['Cliente', 'Barbeiro', 'Serviço', 'Data e Horário'];
+    var STORAGE_KEY = 'booking_state';
+    var stepLabels = ['Cliente', 'Serviço e Profissional', 'Data e Horário'];
     var currentStep = 1;
     var selectedCustomerId = null;
-    var selectedProfessional = null;
-    var selectedServices = [];
+    var selectedCombos = [];
     var selectedDate = null;
     var selectedTime = null;
 
+    function saveState() {
+        try {
+            var state = JSON.stringify({
+                customerId: selectedCustomerId,
+                customerName: (document.getElementById('welcomeName') || {}).textContent || '',
+                customerCpf: (document.getElementById('welcomeCpf') || {}).textContent || '',
+                combos: selectedCombos,
+                date: selectedDate,
+                time: selectedTime,
+                step: currentStep
+            });
+            sessionStorage.setItem(STORAGE_KEY, state);
+        } catch(e) {}
+    }
+
+    function clearState() {
+        try { sessionStorage.removeItem(STORAGE_KEY); } catch(e) {}
+    }
 
     function updateSteps(step) {
         currentStep = step;
@@ -301,12 +315,21 @@
             }
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        saveState();
     }
 
     function nextStep(step) { updateSteps(step); }
     function prevStep(step) { updateSteps(step); }
 
     // --- Step 1: Buscar cliente por Nome + CPF ---
+    function showErrorMsg(id, msg) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.querySelector('p').textContent = msg;
+            el.classList.remove('hidden');
+        }
+    }
+
     function buscarCliente() {
         var name = document.getElementById('step1Name').value.trim();
         var cpf = document.getElementById('step1Cpf').value.trim();
@@ -316,8 +339,10 @@
         var welcome = document.getElementById('step1Welcome');
         var nextBtn = document.getElementById('step1Next');
 
-        if (!name || name.length < 3) { alert('Informe o nome completo'); return; }
-        if (!cpf || cpf.length < 3) { alert('Informe o CPF'); return; }
+        document.getElementById('step1Error').classList.add('hidden');
+
+        if (!name || name.length < 3) { showErrorMsg('step1Error', 'Informe o nome completo'); return; }
+        if (!cpf || cpf.length < 3) { showErrorMsg('step1Error', 'Informe o CPF'); return; }
 
         btn.disabled = true;
         btn.textContent = 'Buscando...';
@@ -355,13 +380,13 @@
                         if (data2.success) {
                             showWelcome(data2.customer, name, cpf, btn);
                         } else {
-                            alert(data2.message || 'Erro ao cadastrar. Tente novamente.');
+                            showErrorMsg('step1Error', data2.message || 'Erro ao cadastrar. Tente novamente.');
                             btn.disabled = false;
                             btn.textContent = 'Buscar';
                         }
                     })
                     .catch(function() {
-                        alert('Erro ao cadastrar. Tente novamente.');
+                        showErrorMsg('step1Error', 'Erro ao cadastrar. Tente novamente.');
                         btn.disabled = false;
                         btn.textContent = 'Buscar';
                     });
@@ -369,7 +394,7 @@
             })
             .catch(function() {
                 spinner.classList.add('hidden');
-                alert('Erro ao buscar cliente. Tente novamente.');
+                showErrorMsg('step1Error', 'Erro ao buscar cliente. Tente novamente.');
                 btn.disabled = false;
                 btn.textContent = 'Buscar';
             });
@@ -387,53 +412,59 @@
         nextBtn.className = 'mt-3 w-full bg-gradient-to-r from-brand-400 to-brand-600 text-white font-semibold rounded-xl py-3 hover:from-brand-500 hover:to-brand-700 transition-all duration-200 shadow-sm text-sm cursor-pointer';
         nextBtn.textContent = 'Continuar';
         btn.classList.add('hidden');
+        saveState();
     }
 
-    // --- Step 2: Professional ---
-    function selectProfessional(el) {
-        document.querySelectorAll('.professional-card').forEach(function(c) {
-            c.classList.remove('selected', 'border-brand-300', 'bg-brand-50/30');
-            c.querySelector('.check-icon').classList.add('hidden');
+    // --- Step 2: Attendant chip toggle (Serviço + Profissional) ---
+    function toggleAttendant(el) {
+        var serviceId = el.dataset.serviceId;
+        var userId = el.dataset.userId;
+        var key = serviceId + '_' + userId;
+
+        // Deselect all other chips in the same service card
+        var siblings = el.closest('.rounded-xl').querySelectorAll('.attendant-chip[data-service-id="' + serviceId + '"]');
+        siblings.forEach(function(sib) {
+            var sibKey = sib.dataset.serviceId + '_' + sib.dataset.userId;
+            var sibIdx = selectedCombos.indexOf(sibKey);
+            if (sibKey !== key && sibIdx !== -1) {
+                selectedCombos.splice(sibIdx, 1);
+                sib.classList.remove('border-brand-300', 'bg-brand-50/30', 'text-brand-700');
+                sib.querySelector('.check-icon').classList.add('hidden');
+            }
         });
-        el.classList.add('selected', 'border-brand-300', 'bg-brand-50/30');
-        el.querySelector('.check-icon').classList.remove('hidden');
-        selectedProfessional = el.dataset.value;
-        document.getElementById('user_id').value = selectedProfessional;
-        var btn = document.getElementById('step2Next');
-        btn.disabled = false;
-        btn.className = 'flex-1 bg-gradient-to-r from-brand-400 to-brand-600 text-white font-semibold rounded-xl py-3 hover:from-brand-500 hover:to-brand-700 transition-all duration-200 shadow-sm text-sm cursor-pointer';
-        btn.textContent = 'Continuar';
-        updateResumo();
-    }
 
-    // --- Step 3: Service (multi-select) ---
-    function toggleService(el) {
-        var value = el.dataset.value;
-        var idx = selectedServices.indexOf(value);
+        // Toggle clicked chip
+        var idx = selectedCombos.indexOf(key);
         if (idx === -1) {
-            selectedServices.push(value);
-            el.classList.add('selected', 'border-brand-300', 'bg-brand-50/30');
+            selectedCombos.push(key);
+            el.classList.add('border-brand-300', 'bg-brand-50/30', 'text-brand-700');
             el.querySelector('.check-icon').classList.remove('hidden');
         } else {
-            selectedServices.splice(idx, 1);
-            el.classList.remove('selected', 'border-brand-300', 'bg-brand-50/30');
+            selectedCombos.splice(idx, 1);
+            el.classList.remove('border-brand-300', 'bg-brand-50/30', 'text-brand-700');
             el.querySelector('.check-icon').classList.add('hidden');
         }
 
-        var container = document.getElementById('serviceIdsContainer');
+        var container = document.getElementById('comboIdsContainer');
         container.innerHTML = '';
-        selectedServices.forEach(function(sid) {
-            var input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'service_ids[]';
-            input.value = sid;
-            container.appendChild(input);
+        selectedCombos.forEach(function(k, i) {
+            var parts = k.split('_');
+            var s = document.createElement('input');
+            s.type = 'hidden';
+            s.name = 'combos[' + i + '][service_id]';
+            s.value = parts[0];
+            container.appendChild(s);
+            var u = document.createElement('input');
+            u.type = 'hidden';
+            u.name = 'combos[' + i + '][user_id]';
+            u.value = parts[1];
+            container.appendChild(u);
         });
 
-        var count = selectedServices.length;
-        document.getElementById('selectedServicesCount').textContent = count === 0 ? 'Nenhum serviço selecionado' : count + ' serviço(s) selecionado(s)';
+        var count = selectedCombos.length;
+        document.getElementById('selectedCombosCount').textContent = count === 0 ? 'Nenhum item selecionado' : count + ' item(ns) selecionado(s)';
 
-        var btn = document.getElementById('step3Next');
+        var btn = document.getElementById('step2Next');
         if (count > 0) {
             btn.disabled = false;
             btn.className = 'flex-1 bg-gradient-to-r from-brand-400 to-brand-600 text-white font-semibold rounded-xl py-3 hover:from-brand-500 hover:to-brand-700 transition-all duration-200 shadow-sm text-sm cursor-pointer';
@@ -441,13 +472,14 @@
         } else {
             btn.disabled = true;
             btn.className = 'flex-1 bg-stone-200 dark:bg-stone-600 text-stone-400 dark:text-stone-500 font-semibold rounded-xl py-3 cursor-not-allowed transition-all duration-200 text-sm';
-            btn.textContent = 'Selecione ao menos um serviço';
+            btn.textContent = 'Selecione ao menos um item';
         }
         updateResumo();
+        saveState();
         if (selectedDate && count > 0) loadSlots();
     }
 
-    // --- Step 4: Date & Time ---
+    // --- Step 3: Date & Time ---
     function selectTime(el) {
         document.querySelectorAll('.time-btn').forEach(function(b) {
             b.classList.remove('selected', 'border-brand-400', 'bg-brand-50', 'text-brand-700', 'ring-2', 'ring-brand-300');
@@ -456,23 +488,33 @@
         selectedTime = el.dataset.value;
         document.getElementById('timeInput').value = selectedTime;
         updateResumo();
-        var btn = document.getElementById('step4Submit');
+        saveState();
+        var btn = document.getElementById('step3Submit');
         btn.disabled = false;
         btn.className = 'flex-1 bg-gradient-to-r from-brand-400 to-brand-600 text-white font-semibold rounded-xl py-3 hover:from-brand-500 hover:to-brand-700 transition-all duration-200 shadow-sm text-sm cursor-pointer';
         btn.textContent = 'Confirmar Agendamento';
     }
 
     function loadSlots() {
-        var userId = document.getElementById('user_id').value;
-        var serviceId = selectedServices.length > 0 ? selectedServices[0] : '';
+        if (selectedCombos.length === 0) return;
         var dateInput = document.getElementById('dateSelect');
         var date = dateInput.dataset.iso || dateInput.value;
+        if (!date) return;
 
-        if (!userId || !serviceId || !date) return;
+        // Collect unique user_ids and service_ids from all combos
+        var userIds = [];
+        var serviceIds = [];
+        selectedCombos.forEach(function(key) {
+            var parts = key.split('_');
+            if (userIds.indexOf(parts[1]) === -1) userIds.push(parts[1]);
+            if (serviceIds.indexOf(parts[0]) === -1) serviceIds.push(parts[0]);
+        });
+
+        if (userIds.length === 0 || serviceIds.length === 0) return;
 
         var grid = document.getElementById('timeSlotsGrid');
         var loading = document.getElementById('loadingSlots');
-        var btn = document.getElementById('step4Submit');
+        var btn = document.getElementById('step3Submit');
 
         selectedTime = null;
         document.getElementById('timeInput').value = '';
@@ -484,7 +526,11 @@
         grid.innerHTML = '';
         loading.classList.remove('hidden');
 
-        fetch('/agendar/slots?user_id=' + userId + '&service_id=' + serviceId + '&date=' + date)
+        var params = 'date=' + encodeURIComponent(date);
+        userIds.forEach(function(uid) { params += '&user_ids[]=' + encodeURIComponent(uid); });
+        serviceIds.forEach(function(sid) { params += '&service_ids[]=' + encodeURIComponent(sid); });
+
+        fetch('/agendar/slots?' + params)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 loading.classList.add('hidden');
@@ -509,17 +555,19 @@
     }
 
     function updateResumo() {
-        var profName = '—';
-        var profSelected = document.querySelector('.professional-card.selected');
-        if (profSelected) profName = profSelected.querySelector('.font-semibold').textContent;
-
-        var servName = '—';
-        var selectedCards = document.querySelectorAll('.service-card.selected');
-        if (selectedCards.length > 0) {
-            servName = Array.from(selectedCards).map(function(c) {
-                return c.querySelector('.font-semibold').textContent;
-            }).join(' + ');
-        }
+        var comboLabels = [];
+        selectedCombos.forEach(function(key) {
+            var parts = key.split('_');
+            var chip = document.querySelector('.attendant-chip[data-service-id="' + parts[0] + '"][data-user-id="' + parts[1] + '"]');
+            if (chip) {
+                var parent = chip.closest('.rounded-xl');
+                if (parent) {
+                    var nameEl = parent.querySelector('.font-semibold');
+                    var userName = chip.textContent.trim();
+                    if (nameEl) comboLabels.push(nameEl.textContent.trim() + ' (' + userName + ')');
+                }
+            }
+        });
 
         var clientName = '—';
         var clientInfo = document.getElementById('welcomeName');
@@ -534,9 +582,93 @@
         }
 
         document.getElementById('resumoCliente').textContent = clientName;
-        document.getElementById('resumoAtendente').textContent = profName;
-        document.getElementById('resumoServico').textContent = servName;
+        document.getElementById('resumoServico').textContent = comboLabels.length > 0 ? comboLabels.join(' + ') : '—';
         document.getElementById('resumoData').textContent = dateTime;
+    }
+
+    function restoreFromStorage() {
+        var raw;
+        try { raw = sessionStorage.getItem(STORAGE_KEY); } catch(e) {}
+        if (!raw) return;
+        var state;
+        try { state = JSON.parse(raw); } catch(e) {}
+        if (!state || !state.customerId) return;
+
+        selectedCustomerId = state.customerId;
+        document.getElementById('customer_id').value = state.customerId;
+        document.getElementById('welcomeName').textContent = state.customerName || '';
+        document.getElementById('welcomeCpf').textContent = state.customerCpf || '';
+        document.getElementById('step1Welcome').classList.remove('hidden');
+        document.getElementById('step1Btn').classList.add('hidden');
+        var nextBtn = document.getElementById('step1Next');
+        nextBtn.classList.remove('hidden');
+        nextBtn.disabled = false;
+        nextBtn.className = 'mt-3 w-full bg-gradient-to-r from-brand-400 to-brand-600 text-white font-semibold rounded-xl py-3 hover:from-brand-500 hover:to-brand-700 transition-all duration-200 shadow-sm text-sm cursor-pointer';
+        nextBtn.textContent = 'Continuar';
+
+        if (state.combos && state.combos.length > 0) {
+            selectedCombos = state.combos;
+            selectedCombos.forEach(function(key) {
+                var parts = key.split('_');
+                var chip = document.querySelector('.attendant-chip[data-service-id="' + parts[0] + '"][data-user-id="' + parts[1] + '"]');
+                if (chip) {
+                    chip.classList.add('border-brand-300', 'bg-brand-50/30', 'text-brand-700');
+                    chip.querySelector('.check-icon').classList.remove('hidden');
+                }
+            });
+            renderCombosHidden();
+            var count = selectedCombos.length;
+            document.getElementById('selectedCombosCount').textContent = count + ' item(ns) selecionado(s)';
+            var btn = document.getElementById('step2Next');
+            btn.disabled = false;
+            btn.className = 'flex-1 bg-gradient-to-r from-brand-400 to-brand-600 text-white font-semibold rounded-xl py-3 hover:from-brand-500 hover:to-brand-700 transition-all duration-200 shadow-sm text-sm cursor-pointer';
+            btn.textContent = 'Continuar (' + count + ')';
+        }
+
+        if (state.date) {
+            selectedDate = state.date;
+            var parts = state.date.split('-');
+            if (parts.length === 3) {
+                var display = parts[2] + '/' + parts[1] + '/' + parts[0];
+                var dateInput = document.getElementById('dateSelect');
+                dateInput.value = display;
+                dateInput.dataset.iso = state.date;
+            }
+            setTimeout(function() {
+                loadSlots();
+                if (state.time) {
+                    var timeBtns = document.querySelectorAll('.time-btn');
+                    timeBtns.forEach(function(b) {
+                        if (b.dataset.value === state.time) {
+                            selectTime(b);
+                        }
+                    });
+                }
+            }, 100);
+        }
+
+        var targetStep = state.step || 1;
+        if (targetStep > 1) {
+            setTimeout(function() { updateSteps(targetStep); }, 50);
+        }
+    }
+
+    function renderCombosHidden() {
+        var container = document.getElementById('comboIdsContainer');
+        container.innerHTML = '';
+        selectedCombos.forEach(function(k, i) {
+            var parts = k.split('_');
+            var s = document.createElement('input');
+            s.type = 'hidden';
+            s.name = 'combos[' + i + '][service_id]';
+            s.value = parts[0];
+            container.appendChild(s);
+            var u = document.createElement('input');
+            u.type = 'hidden';
+            u.name = 'combos[' + i + '][user_id]';
+            u.value = parts[1];
+            container.appendChild(u);
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -591,6 +723,7 @@
                 }
             }.bind(this));
             updateResumo();
+            saveState();
             loadSlots();
         });
 
@@ -605,6 +738,7 @@
                 this.dataset.iso = iso;
                 selectedDate = iso;
                 updateResumo();
+                saveState();
                 loadSlots();
             } else {
                 this.dataset.iso = '';
@@ -615,6 +749,10 @@
         document.getElementById('bookingForm').addEventListener('submit', function() {
             var inp = document.getElementById('dateSelect');
             if (inp.dataset.iso) inp.value = inp.dataset.iso;
+            var btn = document.getElementById('step3Submit');
+            btn.disabled = true;
+            btn.textContent = 'Confirmando...';
+            clearState();
         });
 
         // CPF mask on Step 1
@@ -641,6 +779,9 @@
         document.getElementById('step1Name').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') { e.preventDefault(); buscarCliente(); }
         });
+
+        // Restore saved state after everything is initialized
+        setTimeout(restoreFromStorage, 200);
     });
     </script>
 </body>

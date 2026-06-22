@@ -6,7 +6,7 @@ ftp_host = "ftpupload.net"
 ftp_user = "if0_41967135"
 ftp_pass = "tiUzMXg7kcrfp"
 
-REMOTE_BASE = "nabiesteticaagenda.freehosting.dev/htdocs"
+REMOTE_BASE = "agendabarbearia.infinityfree.me/htdocs"
 
 # Arquivos a fazer upload (local -> remoto)
 files = [
@@ -62,20 +62,39 @@ files = [
     # Services
     ("app/Services/WhatsAppService.php", "/htdocs/app/Services/WhatsAppService.php"),
 
+    # HTTP Kernel
+    ("app/Http/Kernel.php", "/htdocs/app/Http/Kernel.php"),
+
     # Console
     ("app/Console/Kernel.php", "/htdocs/app/Console/Kernel.php"),
     ("app/Console/Commands/SendReminders.php", "/htdocs/app/Console/Commands/SendReminders.php"),
     ("app/Console/Commands/RunBackup.php", "/htdocs/app/Console/Commands/RunBackup.php"),
+
+    # Trial System
+    ("app/Models/Company.php", "/htdocs/app/Models/Company.php"),
+    ("app/Http/Middleware/CheckTrial.php", "/htdocs/app/Http/Middleware/CheckTrial.php"),
+    ("resources/views/trial/expired.blade.php", "/htdocs/resources/views/trial/expired.blade.php"),
+    ("database/migrations/2026_06_22_000001_create_companies_table.php", "/htdocs/database/migrations/2026_06_22_000001_create_companies_table.php"),
+    ("database/migrations/2026_06_22_000002_add_company_id_to_users_table.php", "/htdocs/database/migrations/2026_06_22_000002_add_company_id_to_users_table.php"),
 
     # Providers
     ("app/Providers/AppServiceProvider.php", "/htdocs/app/Providers/AppServiceProvider.php"),
 
     # Routes
     ("routes/web.php", "/htdocs/routes/web.php"),
+    ("routes/api.php", "/htdocs/routes/api.php"),
+    ("routes/console.php", "/htdocs/routes/console.php"),
+    ("routes/channels.php", "/htdocs/routes/channels.php"),
 
     # Views
     ("resources/views/layouts/navigation.blade.php", "/htdocs/resources/views/layouts/navigation.blade.php"),
     ("resources/views/layouts/app.blade.php", "/htdocs/resources/views/layouts/app.blade.php"),
+    ("resources/views/auth/login.blade.php", "/htdocs/resources/views/auth/login.blade.php"),
+    ("resources/views/auth/register.blade.php", "/htdocs/resources/views/auth/register.blade.php"),
+    ("resources/views/auth/verify-email.blade.php", "/htdocs/resources/views/auth/verify-email.blade.php"),
+    ("resources/views/auth/forgot-password.blade.php", "/htdocs/resources/views/auth/forgot-password.blade.php"),
+    ("resources/views/auth/reset-password.blade.php", "/htdocs/resources/views/auth/reset-password.blade.php"),
+    ("resources/views/auth/confirm-password.blade.php", "/htdocs/resources/views/auth/confirm-password.blade.php"),
     ("resources/views/admin/services/create.blade.php", "/htdocs/resources/views/admin/services/create.blade.php"),
     ("resources/views/admin/services/edit.blade.php", "/htdocs/resources/views/admin/services/edit.blade.php"),
     ("resources/views/admin/services/index.blade.php", "/htdocs/resources/views/admin/services/index.blade.php"),
@@ -90,6 +109,7 @@ files = [
     ("resources/views/admin/settings/working-hours.blade.php", "/htdocs/resources/views/admin/settings/working-hours.blade.php"),
     ("resources/views/admin/logs/index.blade.php", "/htdocs/resources/views/admin/logs/index.blade.php"),
     ("resources/views/public/booking.blade.php", "/htdocs/resources/views/public/booking.blade.php"),
+    ("resources/views/public/reagendar.blade.php", "/htdocs/resources/views/public/reagendar.blade.php"),
     ("resources/views/public/confirmacao.blade.php", "/htdocs/resources/views/public/confirmacao.blade.php"),
     ("resources/views/admin/appointments/index.blade.php", "/htdocs/resources/views/admin/appointments/index.blade.php"),
     ("resources/views/admin/appointments/modal.blade.php", "/htdocs/resources/views/admin/appointments/modal.blade.php"),
@@ -97,6 +117,7 @@ files = [
     ("resources/views/admin/dashboard.blade.php", "/htdocs/resources/views/admin/dashboard.blade.php"),
 
     # Components
+    ("resources/views/components/application-logo.blade.php", "/htdocs/resources/views/components/application-logo.blade.php"),
     ("resources/views/components/button.blade.php", "/htdocs/resources/views/components/button.blade.php"),
     ("resources/views/components/input.blade.php", "/htdocs/resources/views/components/input.blade.php"),
     ("resources/views/components/dropdown.blade.php", "/htdocs/resources/views/components/dropdown.blade.php"),
@@ -106,6 +127,9 @@ files = [
     ("public/css/app.css", "/htdocs/public/css/app.css"),
     ("public/js/app.js", "/htdocs/public/js/app.js"),
 
+    # Images
+    ("public/images/barber-logo.png", "/htdocs/public/images/barber-logo.png"),
+
     # Config
     ("tailwind.config.js", "/htdocs/tailwind.config.js"),
     ("resources/css/app.css", "/htdocs/resources/css/app.css"),
@@ -113,11 +137,6 @@ files = [
     # Env (locale .env.ftp -> servidor .env)
     (".env.ftp", "/htdocs/.env"),
 
-    # Migration trigger
-    ("_migrate.php", "/htdocs/_migrate.php"),
-
-    # Cache cleanup (emergency)
-    ("_clear_cache.php", "/htdocs/_clear_cache.php"),
 ]
 
 # Arquivos de cache que PRECISAM ser deletados no servidor (causam o erro 500)
@@ -190,7 +209,7 @@ try:
     ftp.quit()
     print(f"\nUpload completo! {uploaded} enviados, {skipped} ignorados.")
     print(f"\nAntes de acessar o site, rode as migrations:")
-    print(f"https://nabiesteticaagenda.freehosting.dev/_migrate.php")
+    print(f"https://agendabarbearia.infinityfree.me/_migrate.php")
 
 except Exception as e:
     print(f"Erro: {e}")

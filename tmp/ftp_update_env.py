@@ -1,7 +1,13 @@
-APP_NAME="Agenda Barbearia"
+import ftplib, io
+
+ftp_host = "ftpupload.net"
+ftp_user = "if0_41967135"
+ftp_pass = "tiUzMXg7kcrfp"
+
+env_content = """APP_NAME="Agenda Barbearia"
 APP_ENV=production
 APP_KEY=base64:Q83R5BMtBrc5rLu+dZcAWd79Z3UFVfFokh2OB9+bkEo=
-APP_DEBUG=false
+APP_DEBUG=true
 APP_URL=https://agendabarbearia.infinityfree.me
 APP_VERSION=1.0
 
@@ -51,3 +57,25 @@ PUSHER_APP_CLUSTER=mt1
 
 MIX_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
 MIX_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
+"""
+
+try:
+    ftp = ftplib.FTP(ftp_host, ftp_user, ftp_pass)
+    ftp.cwd("/agendabarbearia.infinityfree.me/htdocs")
+    
+    buf = io.BytesIO(env_content.encode())
+    ftp.storbinary("STOR .env", buf)
+    print(".env atualizado com APP_DEBUG=true")
+    
+    # Also delete cache files
+    for f in ["bootstrap/cache/config.php", "bootstrap/cache/packages.php", "bootstrap/cache/services.php"]:
+        try:
+            ftp.delete(f)
+            print(f"Deletado: {f}")
+        except:
+            pass
+    
+    ftp.quit()
+    print("\nAcesse o site e veja o erro detalhado.")
+except Exception as e:
+    print(f"Erro: {e}")

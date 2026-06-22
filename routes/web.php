@@ -23,7 +23,11 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::get('/trial-expired', function () {
+    return view('trial.expired');
+})->name('trial.expired');
+
+Route::middleware(['auth', 'trial'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('customers', CustomerController::class)->except(['show']);
@@ -85,6 +89,7 @@ Route::get('/agendar', [App\Http\Controllers\PublicController::class, 'booking']
 Route::get('/agendar/slots', [App\Http\Controllers\PublicController::class, 'getSlots'])->name('public.slots');
 Route::get('/agendar/buscar-cliente', [App\Http\Controllers\PublicController::class, 'searchCustomer'])->name('public.search-customer');
 Route::post('/agendar', [App\Http\Controllers\PublicController::class, 'store'])->name('public.booking.store');
+Route::get('/agendar/sucesso', [App\Http\Controllers\PublicController::class, 'sucesso'])->name('public.sucesso');
 Route::get('/reagendar/{token}', [App\Http\Controllers\PublicController::class, 'reagendar'])->name('public.reagendar');
 Route::post('/reagendar/{token}', [App\Http\Controllers\PublicController::class, 'reagendarStore'])->name('public.reagendar.store');
 Route::get('/confirmar/{token}', [App\Http\Controllers\PublicController::class, 'confirmar'])->name('public.confirmar');

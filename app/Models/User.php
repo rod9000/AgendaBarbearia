@@ -20,6 +20,7 @@ class User extends Authenticatable
         'role',
         'photo',
         'active',
+        'company_id',
     ];
 
     protected $hidden = [
@@ -50,5 +51,10 @@ class User extends Authenticatable
     public function isAdmin()
     {
         return $this->role === 'admin';
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

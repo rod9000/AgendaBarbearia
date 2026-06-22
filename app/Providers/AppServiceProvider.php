@@ -12,6 +12,7 @@ use App\Observers\CustomerObserver;
 use App\Observers\ProductObserver;
 use App\Observers\ServiceObserver;
 use App\Observers\UserObserver;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        Schema::defaultStringLength(191);
         Customer::observe(CustomerObserver::class);
         Appointment::observe(AppointmentObserver::class);
         Service::observe(ServiceObserver::class);

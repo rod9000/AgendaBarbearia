@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-gradient-to-r from-brand-800 via-brand-900 to-brand-800 border-b border-brand-700 shadow-sm dark:from-stone-900 dark:via-stone-900 dark:to-stone-900 dark:border-stone-700 dark:shadow-none">
+<nav x-data="{ open: false }" class="bg-white border-b border-gray-200 shadow-sm dark:bg-stone-800 dark:border-stone-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
@@ -20,7 +20,7 @@
                     <div class="inline-flex items-center">
                         <x-dropdown align="center" width="48">
                             <x-slot name="trigger">
-                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-brand-200 hover:text-white hover:border-brand-300 focus:outline-none focus:text-white focus:border-brand-300 transition duration-150 ease-in-out dark:text-stone-300 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.customers.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.products.*')) border-brand-300 text-white @endif">
+                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.customers.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.products.*')) border-brand-500 text-brand-700 @endif">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                     <span>Cadastros</span>
                                     <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -47,7 +47,7 @@
                     <div class="inline-flex items-center">
                         <x-dropdown align="center" width="48">
                             <x-slot name="trigger">
-                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-brand-200 hover:text-white hover:border-brand-300 focus:outline-none focus:text-white focus:border-brand-300 transition duration-150 ease-in-out dark:text-stone-300 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.financial.*') || request()->routeIs('admin.commissions.*')) border-brand-300 text-white @endif">
+                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.financial.*') || request()->routeIs('admin.commissions.*')) border-brand-500 text-brand-700 @endif">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     <span>Financeiros</span>
                                     <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -77,7 +77,7 @@
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ml-6">
-                <button @click="dark = !dark" class="mr-3 p-2 rounded-lg text-brand-300 hover:text-white hover:bg-brand-700 dark:hover:bg-stone-700 transition-colors" title="Alternar tema">
+                <button @click="dark = !dark" class="mr-3 p-2 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 dark:text-stone-400 dark:hover:text-white dark:hover:bg-stone-700 transition-colors" title="Alternar tema">
                     <svg x-show="!dark" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                     </svg>
@@ -87,7 +87,7 @@
                 </button>
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="flex items-center text-sm font-medium text-brand-200 hover:text-white hover:border-brand-300 focus:outline-none focus:text-white focus:border-brand-300 transition duration-150 ease-in-out dark:text-brand-300 dark:hover:text-white">
+                        <button class="flex items-center text-sm font-medium text-gray-700 hover:text-brand-700 focus:outline-none focus:text-brand-700 transition duration-150 ease-in-out dark:text-stone-300 dark:hover:text-white">
                             <div>{{ Auth::user()->name }}</div>
                             <div class="ml-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -124,7 +124,7 @@
             </div>
 
             <div class="-mr-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-brand-300 hover:text-white hover:bg-brand-700 focus:outline-none focus:bg-brand-700 focus:text-white transition duration-150 ease-in-out dark:text-stone-300 dark:hover:text-white dark:hover:bg-stone-700 dark:focus:bg-stone-700">
+                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-brand-600 hover:bg-brand-50 focus:outline-none focus:bg-brand-50 focus:text-brand-600 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:bg-stone-700 dark:focus:bg-stone-700">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
