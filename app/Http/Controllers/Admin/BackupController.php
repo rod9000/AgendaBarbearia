@@ -49,6 +49,11 @@ class BackupController extends Controller
 
     public function download($filename)
     {
+        $filename = basename($filename);
+        if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $filename)) {
+            abort(400, 'Nome de arquivo inválido');
+        }
+
         $path = 'backups/' . $filename;
         if (!Storage::disk('local')->exists($path)) {
             abort(404);

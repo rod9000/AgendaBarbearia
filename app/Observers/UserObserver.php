@@ -17,7 +17,7 @@ class UserObserver
         $old = $user->getOriginal();
         $changes = [];
         foreach ($user->getChanges() as $key => $value) {
-            if ($key !== 'updated_at' && $key !== 'remember_token') {
+            if ($key !== 'updated_at' && $key !== 'remember_token' && $key !== 'password') {
                 $changes[] = "$key: {$old[$key]} → $value";
             }
         }

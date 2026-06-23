@@ -4,37 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Models\Appointment;
 use App\Models\BlockedSlot;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\NotificationLog;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\WorkingHour;
+use App\Services\BookingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class PublicController extends Controller
 {
+    protected $bookingService;
+
+    public function __construct(BookingService $bookingService)
+    {
+        $this->bookingService = $bookingService;
+    }
+
     public function booking()
     {
-        $services = Service::where('active', true)->orderBy('name')->get();
-        $users = User::where('active', true)->where('role', 'attendant')->orderBy('name')->get();
+        $combos = $this->bookingService->getServiceUserCombos();
+        $companyWhatsapp = Company::where('active', true)->value('whatsapp');
 
-        $combos = [];
-        foreach ($services as $service) {
-            foreach ($users as $user) {
-                $combos[] = (object) [
-                    'service_id'   => $service->id,
-                    'service_name' => $service->name,
-                    'duration_min' => $service->duration_min,
-                    'price'        => $service->price,
-                    'color_hex'    => $service->color_hex,
-                    'user_id'      => $user->id,
-                    'user_name'    => $user->name,
-                ];
-            }
-        }
-
-        return view('public.booking', compact('combos'));
+        return view('public.booking', compact('combos', 'companyWhatsapp'));
     }
 
     public function searchCustomer(Request $request)
@@ -207,7 +201,7 @@ class PublicController extends Controller
                 $appointment = Appointment::create([
                     'customer_id' => $data['customer_id'],
                     'user_id'     => $userId,
-                    'service_id'  => $services->first()->id,
+                    'service_id'  => $services->count() === 1 ? $services->first()->id : null,
                     'start'       => $start,
                     'end'         => $end,
                     'status'      => 'scheduled',
@@ -295,89 +289,94 @@ class PublicController extends Controller
             'time'                => 'required|date_format:H:i',
         ]);
 
-        $grouped = collect($data['combos'])->groupBy('user_id');
-        $start = Carbon::parse($data['date'] . ' ' . $data['time']);
-
-        $createdAppointments = [];
-
-        $isFirstUser = true;
-
-        foreach ($grouped as $userId => $userCombos) {
-            $serviceIds = $userCombos->pluck('service_id')->toArray();
-            $services = Service::whereIn('id', $serviceIds)->get();
-            $maxDuration = $services->max('duration_min');
-            $end = $start->copy()->addMinutes($maxDuration);
-
-            if ($isFirstUser) {
-                $appointment->update([
-                    'user_id' => $userId,
-                    'start'   => $start,
-                    'end'     => $end,
-                    'status'  => 'scheduled',
-                    'notes'   => $appointment->notes . ' | Reagendado pelo cliente em ' . now()->format('d/m/Y H:i'),
-                ]);
-                $createdAppointments[] = $appointment;
-            } else {
-                $newApp = Appointment::create([
-                    'customer_id' => $appointment->customer_id,
-                    'user_id'     => $userId,
-                    'service_id'  => $services->first()->id,
-                    'start'       => $start,
-                    'end'         => $end,
-                    'status'      => 'scheduled',
-                    'notes'       => 'Reagendado via link (adicional)',
-                    'parent_id'   => $appointment->id,
-                ]);
-                $createdAppointments[] = $newApp;
-            }
-
-            $pivotData = [];
-            foreach ($services as $service) {
-                $pivotData[$service->id] = [
-                    'price'        => $service->price,
-                    'duration_min' => $service->duration_min,
-                ];
-            }
-
-            if ($isFirstUser) {
-                $appointment->services()->sync($pivotData);
-            } else {
-                $newApp->services()->sync($pivotData);
-            }
-
-            $isFirstUser = false;
-        }
-
-        NotificationLog::create([
-            'appointment_id' => $appointment->id,
-            'customer_id'    => $appointment->customer_id,
-            'type'           => 'reschedule',
-            'recipient'      => $appointment->customer->phone ?? null,
-            'message'        => 'Cliente reagendou via link',
-            'status'         => 'clicked',
-            'sent_at'        => now(),
-        ]);
-
-        $allServices = Service::whereIn('id', collect($data['combos'])->pluck('service_id')->toArray())->get();
-        $serviceList = $allServices->map(fn($s) => $s->name . ' (' . $s->duration_min . 'min)')->implode("\n");
-        $totalPrice = $allServices->sum('price');
-        $userNames = $grouped->keys()->map(fn($uid) => User::find($uid)?->name)->filter()->implode(', ');
-        $confirmLink = url('/confirmar/' . $appointment->confirmation_token);
-        $msg = "Olá {$appointment->customer->name}, seu agendamento foi REAGENDADO com sucesso!\n"
-             . "Novos detalhes:\n{$serviceList}\n"
-             . "Data: {$start->format('d/m/Y H:i')}\n"
-             . "Profissional(is): {$userNames}\n"
-             . "Valor: R$ " . number_format($totalPrice, 2, ',', '.')
-             . "\n\nConfirme sua presença:\n{$confirmLink}";
-
         try {
-            $wa = new WhatsAppService();
-            $wa->send($appointment->customer->phone, $msg);
-        } catch (\Exception $e) {
-            \Log::error('WhatsApp reschedule send failed: ' . $e->getMessage());
-        }
+            $grouped = collect($data['combos'])->groupBy('user_id');
+            $start = Carbon::parse($data['date'] . ' ' . $data['time']);
 
-        return response()->json(['success' => true]);
+            $createdAppointments = [];
+
+            $isFirstUser = true;
+
+            foreach ($grouped as $userId => $userCombos) {
+                $serviceIds = $userCombos->pluck('service_id')->toArray();
+                $services = Service::whereIn('id', $serviceIds)->get();
+                $maxDuration = $services->max('duration_min');
+                $end = $start->copy()->addMinutes($maxDuration);
+
+                if ($isFirstUser) {
+                    $appointment->update([
+                        'user_id' => $userId,
+                        'start'   => $start,
+                        'end'     => $end,
+                        'status'  => 'scheduled',
+                        'notes'   => $appointment->notes . ' | Reagendado pelo cliente em ' . now()->format('d/m/Y H:i'),
+                    ]);
+                    $createdAppointments[] = $appointment;
+                } else {
+                    $newApp = Appointment::create([
+                        'customer_id' => $appointment->customer_id,
+                        'user_id'     => $userId,
+                        'service_id'  => $services->count() === 1 ? $services->first()->id : null,
+                        'start'       => $start,
+                        'end'         => $end,
+                        'status'      => 'scheduled',
+                        'notes'       => 'Reagendado via link (adicional)',
+                        'parent_id'   => $appointment->id,
+                    ]);
+                    $createdAppointments[] = $newApp;
+                }
+
+                $pivotData = [];
+                foreach ($services as $service) {
+                    $pivotData[$service->id] = [
+                        'price'        => $service->price,
+                        'duration_min' => $service->duration_min,
+                    ];
+                }
+
+                if ($isFirstUser) {
+                    $appointment->services()->sync($pivotData);
+                } else {
+                    $newApp->services()->sync($pivotData);
+                }
+
+                $isFirstUser = false;
+            }
+
+            NotificationLog::create([
+                'appointment_id' => $appointment->id,
+                'customer_id'    => $appointment->customer_id,
+                'type'           => 'reschedule',
+                'recipient'      => $appointment->customer->phone ?? null,
+                'message'        => 'Cliente reagendou via link',
+                'status'         => 'clicked',
+                'sent_at'        => now(),
+            ]);
+
+            $allServices = Service::whereIn('id', collect($data['combos'])->pluck('service_id')->toArray())->get();
+            $serviceList = $allServices->map(fn($s) => $s->name . ' (' . $s->duration_min . 'min)')->implode("\n");
+            $totalPrice = $allServices->sum('price');
+            $userNames = $grouped->keys()->map(fn($uid) => User::find($uid)?->name)->filter()->implode(', ');
+            $confirmLink = url('/confirmar/' . $appointment->confirmation_token);
+            $msg = "Olá {$appointment->customer->name}, seu agendamento foi REAGENDADO com sucesso!\n"
+                 . "Novos detalhes:\n{$serviceList}\n"
+                 . "Data: {$start->format('d/m/Y H:i')}\n"
+                 . "Profissional(is): {$userNames}\n"
+                 . "Valor: R$ " . number_format($totalPrice, 2, ',', '.')
+                 . "\n\nConfirme sua presença:\n{$confirmLink}";
+
+            try {
+                $wa = new WhatsAppService();
+                $wa->send($appointment->customer->phone, $msg);
+            } catch (\Exception $e) {
+                \Log::error('WhatsApp reschedule send failed: ' . $e->getMessage());
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            \Log::error('Reagendamento failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erro ao reagendar. Tente novamente.'], 500);
+        }
     }
 
     public function confirmar($token)
@@ -420,6 +419,59 @@ class PublicController extends Controller
             'message' => 'Presença confirmada com sucesso!',
             'appointment' => $appointment,
         ]);
+    }
+
+    public function cancelar($token)
+    {
+        $appointment = Appointment::where('confirmation_token', $token)->first();
+
+        if (!$appointment) {
+            return view('public.cancelamento', ['appointment' => null, 'cancelled' => false, 'error' => 'Link inválido ou expirado.']);
+        }
+
+        if (in_array($appointment->status, ['cancelled', 'completed'])) {
+            return view('public.cancelamento', ['appointment' => $appointment, 'cancelled' => true]);
+        }
+
+        return view('public.cancelamento', ['appointment' => $appointment, 'cancelled' => false]);
+    }
+
+    public function cancelarStore($token)
+    {
+        $appointment = Appointment::where('confirmation_token', $token)->first();
+
+        if (!$appointment) {
+            return redirect()->route('public.booking')->with('error', 'Link inválido.');
+        }
+
+        if (in_array($appointment->status, ['cancelled', 'completed'])) {
+            return view('public.cancelamento', ['appointment' => $appointment, 'cancelled' => true]);
+        }
+
+        $appointment->update(['status' => 'cancelled']);
+
+        NotificationLog::create([
+            'appointment_id' => $appointment->id,
+            'customer_id'    => $appointment->customer_id,
+            'type'           => 'cancellation_link',
+            'recipient'      => $appointment->customer->phone ?? null,
+            'message'        => 'Cliente cancelou agendamento via link',
+            'status'         => 'clicked',
+            'sent_at'        => now(),
+        ]);
+
+        try {
+            $wa = app(\App\Services\WhatsAppService::class);
+            $wa->send($appointment->customer->phone,
+                "❌ Seu agendamento foi cancelado.\n" .
+                "Data: {$appointment->start->format('d/m/Y H:i')}\n\n" .
+                "🔄 Para reagendar: " . url('/reagendar/' . $token)
+            );
+        } catch (\Exception $e) {
+            \Log::error('WhatsApp send failed: ' . $e->getMessage());
+        }
+
+        return view('public.cancelamento', ['appointment' => $appointment, 'cancelled' => true]);
     }
 
     public function sucesso()

@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('send:reminders')->everyThirtyMinutes();
         $schedule->command('backup:run')->dailyAt('03:00');
+        $schedule->command('customers:birthday-congrats')->dailyAt('09:00');
     }
 
     /**

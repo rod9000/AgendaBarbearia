@@ -13,3 +13,15 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+/tmp/
+/tmep/
+cookies.txt
+*.zip
+*.sql
+_create_admin.php
+_migrate.php
+_clear_cache.php
+_seed_services.php
+/public/test*.php
+/public/extract*.php
+/public/minimal.php

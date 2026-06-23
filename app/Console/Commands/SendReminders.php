@@ -11,15 +11,15 @@ use Illuminate\Console\Command;
 class SendReminders extends Command
 {
     protected $signature = 'send:reminders';
-    protected $description = 'Send WhatsApp reminders for upcoming appointments';
+    protected $description = 'Send WhatsApp reminders for upcoming appointments (24h before)';
 
     public function handle()
     {
         $now = Carbon::now();
-        $targetStart = $now->copy()->addHour();
-        $targetEnd = $now->copy()->addHours(2);
+        $targetStart = $now->copy();
+        $targetEnd = $now->copy()->addHours(24);
 
-        $appointments = Appointment::with(['customer', 'service'])
+        $appointments = Appointment::with(['customer', 'services', 'user'])
             ->whereBetween('start', [$targetStart, $targetEnd])
             ->whereIn('status', ['scheduled', 'confirmed'])
             ->whereDoesntHave('notifications', function ($q) {
@@ -28,24 +28,17 @@ class SendReminders extends Command
             ->get();
 
         $count = 0;
-        $wa = new WhatsAppService();
+        $wa = app(WhatsAppService::class);
 
         foreach ($appointments as $app) {
-            $msg = "🔔 Lembrete: {$app->customer->name}, seu horário é às "
-                 . $app->start->format('H:i') . "h!\n"
-                 . "Serviço: {$app->service->name}\n"
-                 . "Duração: {$app->service->duration_min} min\n"
-                 . "Valor: R$ " . number_format($app->service->price, 2, ',', '.') . "\n"
-                 . "Local: Clínica de Estética";
-
-            $success = $wa->send($app->customer->phone, $msg);
+            $success = $wa->sendReminder($app);
 
             NotificationLog::create([
                 'appointment_id' => $app->id,
                 'customer_id'    => $app->customer_id,
                 'type'           => 'reminder',
                 'recipient'      => $app->customer->phone,
-                'message'        => $msg,
+                'message'        => 'Lembrete enviado para ' . $app->customer->name,
                 'status'         => $success ? 'sent' : 'failed',
                 'sent_at'        => now(),
             ]);

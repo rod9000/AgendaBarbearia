@@ -81,7 +81,7 @@
 
                                 <div class="space-y-3" id="servicesGrouped">
                                     @foreach($grouped as $serviceId => $comboGroup)
-                                    @php $first = $comboGroup[0]; @endphp
+                                    @php $first = $comboGroup->first(); @endphp
                                     <div class="bg-white dark:bg-stone-700 rounded-xl border-2 border-stone-100 dark:border-stone-600 p-4">
                                         <div class="flex items-center gap-3 mb-3">
                                             <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background: {{ $first->color_hex }}22">

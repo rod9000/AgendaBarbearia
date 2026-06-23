@@ -1,9 +1,13 @@
 <?php
-// Migration trigger - DELETE AFTER USE
 chdir(__DIR__);
 require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-$kernel->call('migrate:fresh', ['--force' => true, '--drop-views' => true, '--seed' => false]);
-echo "<pre>" . $kernel->output() . "</pre>";
-echo "<p style='color:red'>⚠ DELETE THIS FILE NOW</p>";
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+use Illuminate\Support\Facades\Artisan;
+
+echo "<pre>";
+Artisan::call('migrate', ['--force' => true]);
+echo Artisan::output();
+echo "\n<hr><p style='color:red'>⚠ DELETE _migrate.php APÓS USAR</p>";
+echo "<p><a href='/admin/dashboard'>Ir para o painel</a></p>";

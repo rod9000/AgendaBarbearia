@@ -48,23 +48,12 @@ Route::middleware(['auth', 'trial'])->prefix('admin')->name('admin.')->group(fun
     Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
     Route::post('products/movement', [ProductController::class, 'movementStore'])->name('products.movement.store');
 
-    Route::resource('users', UserController::class)->except(['show']);
-
-    Route::get('logs', [LogController::class, 'index'])->name('logs.index');
-
     Route::get('financial', [FinancialController::class, 'index'])->name('financial.index');
     Route::post('financial/payments', [FinancialController::class, 'store'])->name('financial.payments.store');
 
     Route::get('commissions', [CommissionController::class, 'index'])->name('commissions.index');
     Route::get('commissions/professional/{user}', [CommissionController::class, 'professionalStatement'])->name('commissions.professional');
     Route::post('commissions/{commission}/mark-paid', [CommissionController::class, 'markPaid'])->name('commissions.mark-paid');
-
-    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('reports/export-csv', [ReportController::class, 'exportCsv'])->name('reports.export-csv');
-
-    Route::get('backup', [BackupController::class, 'index'])->name('backup.index');
-    Route::post('backup/run', [BackupController::class, 'run'])->name('backup.run');
-    Route::get('backup/download/{filename}', [BackupController::class, 'download'])->name('backup.download');
 
     Route::get('loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
     Route::get('loyalty/create', [LoyaltyController::class, 'create'])->name('loyalty.create');
@@ -75,8 +64,6 @@ Route::middleware(['auth', 'trial'])->prefix('admin')->name('admin.')->group(fun
     Route::get('customers/{customer}/points', [LoyaltyController::class, 'customerPoints'])->name('loyalty.customer');
     Route::post('customers/{customer}/redeem', [LoyaltyController::class, 'redeem'])->name('loyalty.redeem');
 
-    Route::get('migrate', [MigrationController::class, 'run'])->name('migrate');
-
     Route::get('appointments', [AppointmentController::class, 'index'])->name('appointments.index');
     Route::get('appointments/calendar-data', [AppointmentController::class, 'calendarData'])->name('appointments.calendar-data');
     Route::post('appointments', [AppointmentController::class, 'store'])->name('appointments.store');
@@ -85,14 +72,36 @@ Route::middleware(['auth', 'trial'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('appointments/{appointment}', [AppointmentController::class, 'destroy'])->name('appointments.destroy');
 });
 
-Route::get('/agendar', [App\Http\Controllers\PublicController::class, 'booking'])->name('public.booking');
-Route::get('/agendar/slots', [App\Http\Controllers\PublicController::class, 'getSlots'])->name('public.slots');
-Route::get('/agendar/buscar-cliente', [App\Http\Controllers\PublicController::class, 'searchCustomer'])->name('public.search-customer');
-Route::post('/agendar', [App\Http\Controllers\PublicController::class, 'store'])->name('public.booking.store');
-Route::get('/agendar/sucesso', [App\Http\Controllers\PublicController::class, 'sucesso'])->name('public.sucesso');
-Route::get('/reagendar/{token}', [App\Http\Controllers\PublicController::class, 'reagendar'])->name('public.reagendar');
-Route::post('/reagendar/{token}', [App\Http\Controllers\PublicController::class, 'reagendarStore'])->name('public.reagendar.store');
-Route::get('/confirmar/{token}', [App\Http\Controllers\PublicController::class, 'confirmar'])->name('public.confirmar');
+Route::middleware(['auth', 'trial', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('users', UserController::class)->except(['show']);
+
+    Route::get('logs', [LogController::class, 'index'])->name('logs.index');
+
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/export-csv', [ReportController::class, 'exportCsv'])->name('reports.export-csv');
+
+    Route::get('backup', [BackupController::class, 'index'])->name('backup.index');
+    Route::post('backup/run', [BackupController::class, 'run'])->name('backup.run');
+    Route::get('backup/download/{filename}', [BackupController::class, 'download'])->name('backup.download');
+
+    Route::get('migrate', [MigrationController::class, 'run'])->name('migrate');
+
+    Route::get('settings/whatsapp', [SettingsController::class, 'whatsapp'])->name('settings.whatsapp');
+    Route::post('settings/whatsapp', [SettingsController::class, 'whatsappStore'])->name('settings.whatsapp.store');
+});
+
+Route::middleware('throttle:10,1')->group(function () {
+    Route::get('/agendar', [App\Http\Controllers\PublicController::class, 'booking'])->name('public.booking');
+    Route::get('/agendar/slots', [App\Http\Controllers\PublicController::class, 'getSlots'])->name('public.slots');
+    Route::get('/agendar/buscar-cliente', [App\Http\Controllers\PublicController::class, 'searchCustomer'])->name('public.search-customer');
+    Route::post('/agendar', [App\Http\Controllers\PublicController::class, 'store'])->name('public.booking.store');
+    Route::get('/agendar/sucesso', [App\Http\Controllers\PublicController::class, 'sucesso'])->name('public.sucesso');
+    Route::get('/reagendar/{token}', [App\Http\Controllers\PublicController::class, 'reagendar'])->name('public.reagendar');
+    Route::post('/reagendar/{token}', [App\Http\Controllers\PublicController::class, 'reagendarStore'])->name('public.reagendar.store');
+    Route::get('/confirmar/{token}', [App\Http\Controllers\PublicController::class, 'confirmar'])->name('public.confirmar');
+Route::get('/cancelar/{token}', [App\Http\Controllers\PublicController::class, 'cancelar'])->name('public.cancelar');
+Route::post('/cancelar/{token}', [App\Http\Controllers\PublicController::class, 'cancelarStore'])->name('public.cancelar.store');
+});
 
 Route::get('/dashboard', function () {
     return redirect()->route('admin.dashboard');

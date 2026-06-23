@@ -14,6 +14,7 @@ class Company extends Model
         'slug',
         'email',
         'phone',
+        'whatsapp',
         'cnpj',
         'trial_starts_at',
         'trial_ends_at',

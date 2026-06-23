@@ -3,15 +3,27 @@
 namespace App\Providers;
 
 use App\Models\Appointment;
+use App\Models\BlockedSlot;
+use App\Models\Commission;
+use App\Models\Company;
 use App\Models\Customer;
+use App\Models\LoyaltyReward;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\WorkingHour;
 use App\Observers\AppointmentObserver;
+use App\Observers\BlockedSlotObserver;
+use App\Observers\CommissionObserver;
+use App\Observers\CompanyObserver;
 use App\Observers\CustomerObserver;
+use App\Observers\LoyaltyRewardObserver;
+use App\Observers\PaymentObserver;
 use App\Observers\ProductObserver;
 use App\Observers\ServiceObserver;
 use App\Observers\UserObserver;
+use App\Observers\WorkingHourObserver;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,5 +42,11 @@ class AppServiceProvider extends ServiceProvider
         Service::observe(ServiceObserver::class);
         Product::observe(ProductObserver::class);
         User::observe(UserObserver::class);
+        Payment::observe(PaymentObserver::class);
+        Commission::observe(CommissionObserver::class);
+        WorkingHour::observe(WorkingHourObserver::class);
+        BlockedSlot::observe(BlockedSlotObserver::class);
+        LoyaltyReward::observe(LoyaltyRewardObserver::class);
+        Company::observe(CompanyObserver::class);
     }
 }

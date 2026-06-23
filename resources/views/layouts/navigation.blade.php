@@ -111,6 +111,9 @@
                             <x-dropdown-link :href="route('admin.logs.index')">
                                 Auditoria
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.settings.whatsapp')">
+                                WhatsApp
+                            </x-dropdown-link>
                             @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

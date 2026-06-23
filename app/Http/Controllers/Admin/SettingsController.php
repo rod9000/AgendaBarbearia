@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\BlockedSlot;
+use App\Models\Company;
 use App\Models\User;
 use App\Models\WorkingHour;
 use Carbon\Carbon;
@@ -121,5 +122,27 @@ class SettingsController extends Controller
     {
         $blockedSlot->delete();
         return redirect()->back()->with('success', 'Bloqueio removido!');
+    }
+
+    public function whatsapp()
+    {
+        $company = Company::where('active', true)->first();
+        return view('admin.settings.whatsapp', compact('company'));
+    }
+
+    public function whatsappStore(Request $request)
+    {
+        $data = $request->validate([
+            'whatsapp' => 'nullable|string|max:20',
+        ]);
+
+        $company = Company::where('active', true)->first();
+        if ($company) {
+            $company->update(['whatsapp' => $data['whatsapp']]);
+            return redirect()->route('admin.settings.whatsapp')
+                ->with('success', 'WhatsApp atualizado com sucesso!');
+        }
+
+        return redirect()->back()->with('error', 'Nenhuma empresa encontrada.');
     }
 }
