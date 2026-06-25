@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Commission;
 use App\Models\Customer;
+use App\Models\Sale;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\Carbon;
@@ -42,13 +43,10 @@ class DashboardController extends Controller
             ->join('appointment_service', 'appointments.id', '=', 'appointment_service.appointment_id')
             ->sum('appointment_service.price');
 
-        $completedCount = (clone $completed)->count();
-        $pendingCount = (clone $pending)->count();
-        $cancelledCount = (clone $cancelled)->count();
+        $salesTotal = (float) Sale::whereBetween('created_at', [$periodStart, $periodEnd])->sum('total');
+        $salesCount = Sale::whereBetween('created_at', [$periodStart, $periodEnd])->count();
 
-        $uniqueCustomers = (clone $completed)->distinct('customer_id')->count('customer_id');
-
-        $avgTicket = $completedCount > 0 ? $revenue / $completedCount : 0;
+        $totalRevenue = $revenue + $salesTotal;
 
         // --- Receita Dia/Semana/Mês (corrigido: usa appointment_service) ---
         $todayRange = [Carbon::today(), Carbon::today()->endOfDay()];
@@ -58,6 +56,30 @@ class DashboardController extends Controller
         $revenueDay = $this->revenueInRange($todayRange);
         $revenueWeek = $this->revenueInRange($weekRange);
         $revenueMonth = $this->revenueInRange($monthRange);
+
+        $salesDay = (float) Sale::whereBetween('created_at', $todayRange)->sum('total');
+        $salesWeek = (float) Sale::whereBetween('created_at', $weekRange)->sum('total');
+        $salesMonth = (float) Sale::whereBetween('created_at', $monthRange)->sum('total');
+
+        $totalDay = $revenueDay + $salesDay;
+        $totalWeek = $revenueWeek + $salesWeek;
+        $totalMonth = $revenueMonth + $salesMonth;
+
+        $revenueByService = (clone $completed)
+            ->join('appointment_service', 'appointments.id', '=', 'appointment_service.appointment_id')
+            ->join('services', 'appointment_service.service_id', '=', 'services.id')
+            ->select('services.name', DB::raw('SUM(appointment_service.price) as total'))
+            ->groupBy('services.name')
+            ->orderByDesc('total')
+            ->get();
+
+        $completedCount = (clone $completed)->count();
+        $pendingCount = (clone $pending)->count();
+        $cancelledCount = (clone $cancelled)->count();
+
+        $uniqueCustomers = (clone $completed)->distinct('customer_id')->count('customer_id');
+
+        $avgTicket = $completedCount > 0 ? $revenue / $completedCount : 0;
 
         $countDay = Appointment::where('status', 'completed')
             ->whereBetween('start', $todayRange)->count();
@@ -174,12 +196,15 @@ class DashboardController extends Controller
         }
 
         return view('admin.dashboard', compact(
-            'revenue', 'completedCount', 'pendingCount', 'cancelledCount',
+            'revenue', 'salesTotal', 'salesCount', 'completedCount', 'pendingCount', 'cancelledCount',
             'uniqueCustomers', 'avgTicket',
             'todayAppointments', 'upcomingAppointments',
             'todayBirthdays', 'monthBirthdays',
             'period', 'chartData',
             'revenueDay', 'revenueWeek', 'revenueMonth',
+            'salesDay', 'salesWeek', 'salesMonth',
+            'totalDay', 'totalWeek', 'totalMonth',
+            'totalRevenue', 'revenueByService',
             'countDay', 'countWeek', 'countMonth',
             'topServices', 'pendingCommissions',
             'profPerformance', 'isAdmin',

@@ -15,9 +15,15 @@ use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\LoyaltyController;
 use App\Http\Controllers\Admin\MigrationController;
+use App\Http\Controllers\Admin\SaleController;
+use App\Http\Controllers\Admin\EvolutionController;
+use App\Http\Controllers\Admin\BotController;
 
 Route::get('/', function () {
     if (auth()->check()) {
+        if (!auth()->user()->isAdmin()) {
+            return redirect()->route('admin.appointments.index');
+        }
         return redirect()->route('admin.dashboard');
     }
     return redirect()->route('login');
@@ -27,7 +33,7 @@ Route::get('/trial-expired', function () {
     return view('trial.expired');
 })->name('trial.expired');
 
-Route::middleware(['auth', 'trial'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'trial', 'pagePermission'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::resource('customers', CustomerController::class)->except(['show']);
@@ -47,6 +53,11 @@ Route::middleware(['auth', 'trial'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('products', ProductController::class)->except(['show']);
     Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
     Route::post('products/movement', [ProductController::class, 'movementStore'])->name('products.movement.store');
+
+    Route::get('sales', [SaleController::class, 'index'])->name('sales.index');
+    Route::get('sales/create', [SaleController::class, 'create'])->name('sales.create');
+    Route::post('sales', [SaleController::class, 'store'])->name('sales.store');
+    Route::get('sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
 
     Route::get('financial', [FinancialController::class, 'index'])->name('financial.index');
     Route::post('financial/payments', [FinancialController::class, 'store'])->name('financial.payments.store');
@@ -88,6 +99,16 @@ Route::middleware(['auth', 'trial', 'role:admin'])->prefix('admin')->name('admin
 
     Route::get('settings/whatsapp', [SettingsController::class, 'whatsapp'])->name('settings.whatsapp');
     Route::post('settings/whatsapp', [SettingsController::class, 'whatsappStore'])->name('settings.whatsapp.store');
+
+    Route::get('settings/evolution', [EvolutionController::class, 'index'])->name('settings.evolution');
+    Route::post('settings/evolution', [EvolutionController::class, 'store'])->name('settings.evolution.store');
+    Route::post('settings/evolution/connect', [EvolutionController::class, 'connect'])->name('settings.evolution.connect');
+    Route::get('settings/evolution/status', [EvolutionController::class, 'status'])->name('settings.evolution.status');
+    Route::post('settings/evolution/disconnect', [EvolutionController::class, 'disconnect'])->name('settings.evolution.disconnect');
+    Route::post('settings/evolution/set-webhook', [EvolutionController::class, 'setWebhook'])->name('settings.evolution.set-webhook');
+
+    Route::get('settings/bot', [BotController::class, 'index'])->name('settings.bot');
+    Route::post('settings/bot', [BotController::class, 'store'])->name('settings.bot.store');
 });
 
 Route::middleware('throttle:10,1')->group(function () {
@@ -104,6 +125,9 @@ Route::post('/cancelar/{token}', [App\Http\Controllers\PublicController::class, 
 });
 
 Route::get('/dashboard', function () {
+    if (auth()->user() && !auth()->user()->isAdmin()) {
+        return redirect()->route('admin.appointments.index');
+    }
     return redirect()->route('admin.dashboard');
 })->middleware(['auth'])->name('dashboard');
 

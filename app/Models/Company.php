@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -19,6 +20,14 @@ class Company extends Model
         'trial_starts_at',
         'trial_ends_at',
         'active',
+        'evolution_api_url',
+        'evolution_api_key',
+        'evolution_instance_name',
+        'webhook_enabled',
+        'bot_enabled',
+        'welcome_message',
+        'off_hours_message',
+        'evolution_webhook_url',
     ];
 
     protected $casts = [
@@ -27,9 +36,73 @@ class Company extends Model
         'active' => 'boolean',
     ];
 
+    public function evolutionConfigured(): bool
+    {
+        return !empty($this->evolution_api_url)
+            && !empty($this->evolution_api_key)
+            && !empty($this->evolution_instance_name);
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);
+    }
+
+    public function conversations()
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    public function getDefaultWelcomeMessage(): string
+    {
+        return $this->welcome_message
+            ?: "Olá! Bem-vindo(a) à {$this->name}! 💈\n\nComo posso te ajudar?\n\n"
+            . "1️⃣ Agendar horário\n"
+            . "2️⃣ Ver horários de funcionamento\n"
+            . "3️⃣ Ver serviços e preços\n"
+            . "4️⃣ Consultar meus agendamentos\n"
+            . "5️⃣ Cancelar agendamento\n"
+            . "6️⃣ Localização\n\n"
+            . "Digite o número da opção desejada:";
+    }
+
+    public function getDefaultOffHoursMessage(): string
+    {
+        if ($this->off_hours_message) {
+            return $this->off_hours_message;
+        }
+
+        return "Olá! No momento estamos fora do horário de atendimento.\n\n"
+            . "Funcionamos de segunda a sábado.\n"
+            . "Horário: 09:00 às 19:00\n\n"
+            . "Deixe sua mensagem que retornamos no próximo horário de atendimento! 😊";
+    }
+
+    public function isBusinessOpen(): bool
+    {
+        $now = now()->setTimezone('America/Sao_Paulo');
+        $dayOfWeek = $now->dayOfWeek;
+
+        if ($dayOfWeek === Carbon::SUNDAY) {
+            return false;
+        }
+
+        $workingHours = \App\Models\WorkingHour::where('day_of_week', $dayOfWeek)
+            ->where('active', true)
+            ->get();
+
+        if ($workingHours->isEmpty()) {
+            return false;
+        }
+
+        $currentTime = $now->format('H:i:s');
+        foreach ($workingHours as $wh) {
+            if ($currentTime >= $wh->start_time && $currentTime <= $wh->end_time) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function isTrialExpired()

@@ -38,7 +38,7 @@
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-brand-700">Função</label>
-                    <select name="role" required class="input-pastel">
+                    <select name="role" required class="input-pastel" id="roleSelect">
                         <option value="admin" {{ old('role', $user->role ?? '') == 'admin' ? 'selected' : '' }}>Admin</option>
                         <option value="attendant" {{ old('role', $user->role ?? '') == 'attendant' ? 'selected' : '' }}>Barbeiro</option>
                     </select>
@@ -52,6 +52,21 @@
                     </label>
                 </div>
 
+                <div class="mb-4" id="permissionsSection">
+                    <label class="block text-sm font-medium text-brand-700 mb-2">Permissões de Acesso</label>
+                    <p class="text-xs text-brand-400 mb-3">Marque as páginas que este usuário pode acessar.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach($pages as $key => $label)
+                        <label class="inline-flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-brand-50 dark:hover:bg-stone-800">
+                            <input type="checkbox" name="pages[]" value="{{ $key }}"
+                                {{ in_array($key, old('pages', $userPages ?? (\App\Http\Middleware\CheckPagePermission::defaultPages()))) ? 'checked' : '' }}
+                                class="rounded border-brand-300 text-brand-600 shadow-sm focus:ring-brand-300">
+                            <span class="text-sm text-brand-700 dark:text-stone-300">{{ $label }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-2">
                     <a href="{{ route('admin.users.index') }}" class="btn-pastel-secondary">Cancelar</a>
                     <button type="submit" class="btn-pastel-primary">
@@ -63,3 +78,16 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.getElementById('roleSelect').addEventListener('change', function() {
+    var section = document.getElementById('permissionsSection');
+    section.style.display = this.value === 'admin' ? 'none' : 'block';
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var sel = document.getElementById('roleSelect');
+    document.getElementById('permissionsSection').style.display = sel.value === 'admin' ? 'none' : 'block';
+});
+</script>
+@endpush

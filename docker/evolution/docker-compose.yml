@@ -1,0 +1,70 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: evolution_redis
+    restart: always
+    command: redis-server --port 6379 --appendonly yes
+    volumes:
+      - evolution_redis:/data
+    networks:
+      - evolution-net
+
+  mongodb:
+    image: mongo:6
+    container_name: evolution_mongodb
+    restart: always
+    command: mongod --quiet
+    volumes:
+      - evolution_mongodb:/data/db
+    networks:
+      - evolution-net
+
+  api:
+    image: evoapicloud/evolution-api:v1.8.7
+    container_name: evolution_api
+    restart: always
+    depends_on:
+      - redis
+      - mongodb
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - evolution_instances:/evolution/instances
+    networks:
+      - evolution-net
+    env_file:
+      - .env
+    environment:
+      SERVER_URL: ${SERVER_URL:-http://localhost:8080}
+      LOG_LEVEL: ERROR
+
+      AUTHENTICATION_TYPE: apikey
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-changeme_super_secret_key_2026}
+
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: mongodb
+      DATABASE_CONNECTION_URI: mongodb://mongodb:27017/evolution
+
+      REDIS_ENABLED: "true"
+      REDIS_URI: redis://redis:6379
+
+      DEL_INSTANCE: "false"
+      STORE_INSTANCES: "true"
+      STORE_MESSAGES: "true"
+
+      WEBHOOK_ENABLED: "true"
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://host.docker.internal:8000/api/webhook/evolution}
+      WEBHOOK_BY_EVENTS: "true"
+      WEBHOOK_EVENTS: messages.upsert
+      WEBHOOK_BASE64: "false"
+
+networks:
+  evolution-net:
+    driver: bridge
+
+volumes:
+  evolution_instances:
+  evolution_redis:
+  evolution_mongodb:

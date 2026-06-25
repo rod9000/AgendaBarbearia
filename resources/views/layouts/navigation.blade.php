@@ -20,7 +20,7 @@
                     <div class="inline-flex items-center">
                         <x-dropdown align="center" width="48">
                             <x-slot name="trigger">
-                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.customers.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.products.*')) border-brand-500 text-brand-700 @endif">
+                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.customers.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.products.*') || request()->routeIs('admin.sales.*')) border-brand-500 text-brand-700 @endif">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                     <span>Cadastros</span>
                                     <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -47,7 +47,7 @@
                     <div class="inline-flex items-center">
                         <x-dropdown align="center" width="48">
                             <x-slot name="trigger">
-                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.financial.*') || request()->routeIs('admin.commissions.*')) border-brand-500 text-brand-700 @endif">
+                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.financial.*') || request()->routeIs('admin.commissions.*') || request()->routeIs('admin.sales.*')) border-brand-500 text-brand-700 @endif">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     <span>Financeiros</span>
                                     <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -61,6 +61,9 @@
                                 </x-dropdown-link>
                                 <x-dropdown-link :href="route('admin.commissions.index')" :active="request()->routeIs('admin.commissions.*')">
                                     Comissões
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('admin.sales.index')" :active="request()->routeIs('admin.sales.*')">
+                                    Vendas
                                 </x-dropdown-link>
                             </x-slot>
                         </x-dropdown>
@@ -112,7 +115,13 @@
                                 Auditoria
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.settings.whatsapp')">
-                                WhatsApp
+                                WhatsApp (Número)
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.settings.evolution')">
+                                Evolution API
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.settings.bot')">
+                                Bot WhatsApp
                             </x-dropdown-link>
                             @endif
                             <form method="POST" action="{{ route('logout') }}">
@@ -167,6 +176,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.commissions.index')" :active="request()->routeIs('admin.commissions.*')">
                     Comissões
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.sales.index')" :active="request()->routeIs('admin.sales.*')">
+                    Vendas
                 </x-responsive-nav-link>
             </div>
             <x-responsive-nav-link :href="route('admin.settings.working-hours')" :active="request()->routeIs('admin.settings.*')">

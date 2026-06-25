@@ -57,4 +57,21 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Company::class);
     }
+
+    public function pagePermissions()
+    {
+        return $this->hasMany(UserPagePermission::class);
+    }
+
+    public function hasPagePermission(string $routeName): bool
+    {
+        if ($this->isAdmin()) return true;
+
+        return $this->pagePermissions()
+            ->where(function ($q) use ($routeName) {
+                $q->where('page', $routeName)
+                  ->orWhere('page', $routeName . '.*');
+            })
+            ->exists();
+    }
 }

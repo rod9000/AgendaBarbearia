@@ -9,14 +9,17 @@ class CompanySeeder extends Seeder
 {
     public function run()
     {
-        Company::create([
-            'name' => 'Barbearia Andrê',
-            'slug' => 'barbearia-andre',
-            'email' => 'contato@barbeariaandre.com',
-            'phone' => '(44) 99713-5071',
-            'trial_starts_at' => now(),
-            'trial_ends_at' => now()->addDays(30),
-            'active' => true,
-        ]);
+        Company::updateOrCreate(
+            ['slug' => 'barbearia-andre'],
+            [
+                'name' => 'Barbearia Andrê',
+                'email' => 'contato@barbeariaandre.com',
+                'phone' => '(44) 99713-5071',
+                'whatsapp' => '44997135071',
+                'trial_starts_at' => now(),
+                'trial_ends_at' => now()->addMonths(2),
+                'active' => true,
+            ]
+        );
     }
 }

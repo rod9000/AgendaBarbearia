@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\CheckPagePermission;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -17,7 +18,8 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('admin.users.create');
+        $pages = CheckPagePermission::availablePages();
+        return view('admin.users.create', compact('pages'));
     }
 
     public function store(Request $request)
@@ -33,7 +35,14 @@ class UserController extends Controller
         $data['password'] = Hash::make($data['password']);
         $data['active'] = $request->boolean('active', true);
 
-        User::create($data);
+        $user = User::create($data);
+
+        $pages = $request->input('pages', []);
+        $pageData = [];
+        foreach ($pages as $page) {
+            $pageData[] = ['page' => $page];
+        }
+        $user->pagePermissions()->createMany($pageData);
 
         return redirect()->route('admin.users.index')
             ->with('success', 'Usuário cadastrado com sucesso!');
@@ -41,7 +50,9 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        $pages = CheckPagePermission::availablePages();
+        $userPages = $user->pagePermissions()->pluck('page')->toArray();
+        return view('admin.users.edit', compact('user', 'pages', 'userPages'));
     }
 
     public function update(Request $request, User $user)
@@ -63,6 +74,14 @@ class UserController extends Controller
         $data['active'] = $request->boolean('active', true);
 
         $user->update($data);
+
+        $user->pagePermissions()->delete();
+        $pages = $request->input('pages', []);
+        $pageData = [];
+        foreach ($pages as $page) {
+            $pageData[] = ['page' => $page];
+        }
+        $user->pagePermissions()->createMany($pageData);
 
         return redirect()->route('admin.users.index')
             ->with('success', 'Usuário atualizado com sucesso!');

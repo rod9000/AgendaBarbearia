@@ -17,8 +17,8 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $period = $request->get('period', 'year');
-        $startInput = $request->get('start');
-        $endInput = $request->get('end');
+        $startInput = $request->get('start', '');
+        $endInput = $request->get('end', '');
         $userId = $request->get('user_id');
         $statusFilter = $request->get('status', 'completed');
 

@@ -26,11 +26,11 @@
             <div id="custom-range" class="{{ $period == 'custom' ? '' : 'hidden' }} flex gap-2">
                 <div>
                     <label class="label text-xs">De</label>
-                    <input type="date" name="start" value="{{ $startInput ?? '' }}" class="input-pastel text-sm">
+                    <input type="date" name="start" value="{{ $startInput }}" class="input-pastel text-sm">
                 </div>
                 <div>
                     <label class="label text-xs">Até</label>
-                    <input type="date" name="end" value="{{ $endInput ?? '' }}" class="input-pastel text-sm">
+                    <input type="date" name="end" value="{{ $endInput }}" class="input-pastel text-sm">
                 </div>
             </div>
             <div>
@@ -157,8 +157,8 @@
                 <div class="mb-4">
                     <label class="label">Período</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="date" name="start" value="{{ request('start', now()->startOfMonth()->format('Y-m-d')) }}" class="input-pastel">
-                        <input type="date" name="end" value="{{ request('end', now()->format('Y-m-d')) }}" class="input-pastel">
+                        <input type="date" name="start" value="{{ request('start') ? request('start') : now()->startOfMonth()->format('Y-m-d') }}" class="input-pastel">
+                        <input type="date" name="end" value="{{ request('end') ? request('end') : now()->format('Y-m-d') }}" class="input-pastel">
                     </div>
                 </div>
                 <div class="mb-4">

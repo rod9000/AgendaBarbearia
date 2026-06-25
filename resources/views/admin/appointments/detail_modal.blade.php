@@ -253,23 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
-    const editStartEl = document.getElementById('edit-start');
-    if (editStartEl) {
-        editStartEl.addEventListener('change', function() {
-            const checkboxes = document.querySelectorAll('#editServiceSelectWrap .sel-checkbox:checked');
-            let maxDuration = 0;
-            checkboxes.forEach(function(cb) {
-                const d = parseInt(cb.dataset.duration) || 0;
-                if (d > maxDuration) maxDuration = d;
-            });
-            if (this.value && maxDuration > 0) {
-                const start = new Date(this.value);
-                start.setMinutes(start.getMinutes() + maxDuration);
-                document.getElementById('edit-end').value = start.toISOString().slice(0, 16);
-            }
-        });
-    }
-
     const editForm = document.getElementById('editAppointmentForm');
     if (editForm) {
         editForm.addEventListener('submit', function(e) {
