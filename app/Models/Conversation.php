@@ -55,11 +55,18 @@ class Conversation extends Model
         $this->update(['context' => null]);
     }
 
-    public function isExpired(int $minutes = 30): bool
+    public function isExpired(): bool
     {
         if (!$this->last_message_at) {
             return true;
         }
-        return $this->last_message_at->diffInMinutes(now()) >= $minutes;
+
+        $timeout = $this->company?->bot_response_delay_minutes ?? 60;
+
+        if ($timeout <= 0) {
+            return false;
+        }
+
+        return $this->last_message_at->diffInMinutes(now()) >= $timeout;
     }
 }

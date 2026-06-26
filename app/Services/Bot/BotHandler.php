@@ -16,6 +16,7 @@ class BotHandler
 {
     protected WhatsAppService $whatsapp;
     protected ConversationService $conversationService;
+    protected ?Conversation $currentConversation = null;
 
     public function __construct(WhatsAppService $whatsapp, ConversationService $conversationService)
     {
@@ -26,7 +27,8 @@ class BotHandler
     public function handle(string $phone, string $message, Company $company): void
     {
         $this->whatsapp->forCompany($company);
-        $conversation = $this->conversationService->findOrCreate($phone, $company);
+        $this->currentConversation = $this->conversationService->findOrCreate($phone, $company);
+        $conversation = $this->currentConversation;
 
         $this->conversationService->logMessage($conversation, 'inbound', $message);
 
@@ -68,15 +70,35 @@ class BotHandler
     {
         $phone = $conversation->phone;
 
-        match ($text) {
-            '1' => $this->startBooking($conversation),
-            '2' => $this->sendWorkingHours($conversation, $company),
-            '3' => $this->sendServiceList($conversation),
-            '4' => $this->startConsultAppointments($conversation),
-            '5' => $this->startCancellation($conversation),
-            '6' => $this->sendLocation($conversation),
-            default => $this->send($phone, "Opção inválida. Digite o número da opção desejada:\n\n1️⃣ Agendar horário\n2️⃣ Horários de funcionamento\n3️⃣ Serviços e preços\n4️⃣ Consultar agendamentos\n5️⃣ Cancelar agendamento\n6️⃣ Localização"),
+        $menuItems = $company->menuItems()->where('is_active', true)->get();
+
+        if ($menuItems->isEmpty()) {
+            $this->send($phone, "Menu não configurado. Digite 0 para voltar.");
+            return;
+        }
+
+        $menuItem = $menuItems->firstWhere('menu_number', (int) $text);
+
+        if (!$menuItem) {
+            $options = $menuItems->map(fn($i) => "{$i->menu_number}️⃣ {$i->label}")->implode("\n");
+            $this->send($phone, "Opção inválida. Escolha uma opção:\n\n{$options}");
+            return;
+        }
+
+        match ($menuItem->action) {
+            'booking' => $this->startBooking($conversation),
+            'services' => $this->sendServiceList($conversation),
+            'working_hours' => $this->sendWorkingHours($conversation, $company),
+            'consult' => $this->startConsultAppointments($conversation),
+            'cancel' => $this->startCancellation($conversation),
+            'location' => $this->sendLocation($conversation),
+            'custom' => $this->sendCustomResponse($conversation, $menuItem->response_text),
         };
+    }
+
+    private function sendCustomResponse(Conversation $conversation, ?string $text): void
+    {
+        $this->send($conversation->phone, $text ?: "Sem resposta configurada.\n\nDigite 0 para voltar ao menu.");
     }
 
     private function startBooking(Conversation $conversation): void
@@ -557,6 +579,11 @@ class BotHandler
     private function send(string $phone, string $message): void
     {
         $this->whatsapp->send($phone, $message);
+
+        if ($this->currentConversation) {
+            $this->conversationService->logMessage($this->currentConversation, 'outbound', $message);
+            $this->currentConversation->update(['last_message_at' => now()]);
+        }
     }
 
     private function translateStatus(string $status): string

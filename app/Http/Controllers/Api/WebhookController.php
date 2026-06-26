@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\Conversation;
+use App\Models\ReceiveWebhook;
 use App\Services\Bot\BotHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,13 +17,19 @@ class WebhookController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('[Webhook Evolution] Payload recebido:', ['body' => $payload]);
+        if (isset($payload['body']) && is_array($payload['body'])) {
+            $payload = $payload['body'];
+        }
+
+        $data = $payload['data'] ?? $payload;
+
+        $this->saveWebhook($payload, $data);
+
+        Log::info('[Webhook Evolution] Payload recebido:', ['event' => $payload['event'] ?? 'none', 'instance' => $payload['instance'] ?? 'none']);
 
         if (!$this->isValidEvolutionPayload($payload)) {
             return response()->json(['status' => 'ignored'], 200);
         }
-
-        $data = $payload['data'] ?? $payload;
 
         if (($data['key']['fromMe'] ?? false)) {
             return response()->json(['status' => 'ignored_self'], 200);
@@ -29,6 +37,8 @@ class WebhookController extends Controller
 
         $phone = $this->extractPhone($data);
         $message = $this->extractMessage($data);
+
+        Log::info('[Webhook Evolution] Mensagem processada:', ['phone' => $phone, 'message' => $message]);
 
         if (!$phone || !$message) {
             return response()->json(['status' => 'no_data'], 200);
@@ -51,22 +61,46 @@ class WebhookController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
+    private function saveWebhook(array $payload, array $data): void
+    {
+        try {
+            ReceiveWebhook::create([
+                'instance' => $payload['instance'] ?? null,
+                'event' => $payload['event'] ?? null,
+                'sender_phone' => $this->extractPhone($data),
+                'remote_jid' => $data['key']['remoteJid'] ?? null,
+                'from_me' => $data['key']['fromMe'] ?? false,
+                'message_content' => $this->extractMessage($data),
+                'payload' => $payload,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('[Webhook] Erro ao salvar webhook: ' . $e->getMessage());
+        }
+    }
+
     private function isValidEvolutionPayload(array $payload): bool
     {
-        return isset($payload['event']) && $payload['event'] === 'messages.upsert';
+        $event = strtolower($payload['event'] ?? '');
+        return $event === 'messages.upsert' || $event === 'messages_upsert';
     }
 
     private function extractPhone(array $data): ?string
     {
-        $remoteJid = $data['key']['remoteJid'] ?? null;
+        $senderPn = $data['key']['senderPn'] ?? null;
+        if ($senderPn) {
+            $phone = str_replace(['@s.whatsapp.net', '@lid'], '', $senderPn);
+            $phone = preg_replace('/\D/', '', $phone);
+            if (!empty($phone)) {
+                return $phone;
+            }
+        }
 
+        $remoteJid = $data['key']['remoteJid'] ?? null;
         if (!$remoteJid) {
             return null;
         }
 
-        $phone = str_replace('@s.whatsapp.net', '', $remoteJid);
-        $phone = str_replace('@lid', '', $phone);
-
+        $phone = str_replace(['@s.whatsapp.net', '@lid'], '', $remoteJid);
         return preg_replace('/\D/', '', $phone);
     }
 

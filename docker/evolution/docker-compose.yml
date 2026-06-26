@@ -55,9 +55,9 @@ services:
       STORE_MESSAGES: "true"
 
       WEBHOOK_ENABLED: "true"
-      WEBHOOK_URL: ${WEBHOOK_URL:-http://host.docker.internal:8000/api/webhook/evolution}
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://host.docker.internal:8001/api/webhook/evolution}
       WEBHOOK_BY_EVENTS: "true"
-      WEBHOOK_EVENTS: messages.upsert
+      WEBHOOK_EVENTS: MESSAGES_UPSERT
       WEBHOOK_BASE64: "false"
 
 networks:

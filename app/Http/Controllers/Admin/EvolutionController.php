@@ -55,6 +55,10 @@ class EvolutionController extends Controller
             ], 400);
         }
 
+        $this->whatsapp->disconnectInstance();
+
+        sleep(1);
+
         $this->whatsapp->createInstance();
 
         $result = $this->whatsapp->connectInstance();
@@ -115,7 +119,7 @@ class EvolutionController extends Controller
                     'url' => $webhookUrl,
                     'webhook_by_events' => true,
                     'webhook_base64' => false,
-                    'events' => ['messages.upsert'],
+                    'events' => ['MESSAGES_UPSERT'],
                 ]
             );
 

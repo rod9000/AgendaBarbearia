@@ -7,6 +7,12 @@ module.exports = {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
     ],
+    safelist: [
+        'bg-blue-600',
+        'text-blue-200',
+        'rounded-bl-sm',
+        'rounded-br-sm',
+    ],
     theme: {
         extend: {
             fontFamily: {

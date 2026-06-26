@@ -28,12 +28,15 @@ class Company extends Model
         'welcome_message',
         'off_hours_message',
         'evolution_webhook_url',
+        'bot_response_delay_minutes',
+        'bot_off_hours_enabled',
     ];
 
     protected $casts = [
         'trial_starts_at' => 'datetime',
         'trial_ends_at' => 'date',
         'active' => 'boolean',
+        'bot_off_hours_enabled' => 'boolean',
     ];
 
     public function evolutionConfigured(): bool
@@ -53,17 +56,38 @@ class Company extends Model
         return $this->hasMany(Conversation::class);
     }
 
+    public function menuItems()
+    {
+        return $this->hasMany(BotMenuItem::class)->orderBy('sort_order');
+    }
+
     public function getDefaultWelcomeMessage(): string
     {
-        return $this->welcome_message
-            ?: "Olá! Bem-vindo(a) à {$this->name}! 💈\n\nComo posso te ajudar?\n\n"
-            . "1️⃣ Agendar horário\n"
-            . "2️⃣ Ver horários de funcionamento\n"
-            . "3️⃣ Ver serviços e preços\n"
-            . "4️⃣ Consultar meus agendamentos\n"
-            . "5️⃣ Cancelar agendamento\n"
-            . "6️⃣ Localização\n\n"
-            . "Digite o número da opção desejada:";
+        $greeting = $this->welcome_message
+            ?: "Olá! Bem-vindo(a) à {$this->name}! 💈\n\nComo posso te ajudar?";
+
+        $items = $this->menuItems()->where('is_active', true)->get();
+
+        $msg = $greeting . "\n\n";
+
+        foreach ($items as $item) {
+            $emoji = match($item->action) {
+                'booking' => '📅',
+                'services' => '💈',
+                'working_hours' => '🕐',
+                'consult' => '📋',
+                'cancel' => '❌',
+                'location' => '📍',
+                'custom' => '💬',
+                default => '•',
+            };
+            $msg .= "{$emoji} {$item->menu_number}️⃣ {$item->label}\n";
+        }
+
+        $msg .= "🔙 0️⃣ Voltar\n\n";
+        $msg .= "Digite o número da opção desejada:";
+
+        return $msg;
     }
 
     public function getDefaultOffHoursMessage(): string

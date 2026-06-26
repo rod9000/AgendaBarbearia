@@ -18,6 +18,8 @@ use App\Http\Controllers\Admin\MigrationController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\EvolutionController;
 use App\Http\Controllers\Admin\BotController;
+use App\Http\Controllers\Admin\BotMessagesController;
+use App\Http\Controllers\Admin\BotMenuController;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -109,6 +111,18 @@ Route::middleware(['auth', 'trial', 'role:admin'])->prefix('admin')->name('admin
 
     Route::get('settings/bot', [BotController::class, 'index'])->name('settings.bot');
     Route::post('settings/bot', [BotController::class, 'store'])->name('settings.bot.store');
+
+    Route::get('bot-menu', [BotMenuController::class, 'index'])->name('bot-menu.index');
+    Route::post('bot-menu', [BotMenuController::class, 'store'])->name('bot-menu.store');
+    Route::put('bot-menu/{menuItem}', [BotMenuController::class, 'update'])->name('bot-menu.update');
+    Route::delete('bot-menu/{menuItem}', [BotMenuController::class, 'destroy'])->name('bot-menu.destroy');
+    Route::post('bot-menu/reorder', [BotMenuController::class, 'reorder'])->name('bot-menu.reorder');
+
+    Route::get('bot-messages', [BotMessagesController::class, 'index'])->name('bot-messages.index');
+    Route::get('bot-messages/{conversation}', [BotMessagesController::class, 'show'])->name('bot-messages.show');
+    Route::post('bot-messages/{conversation}/send', [BotMessagesController::class, 'send'])->name('bot-messages.send');
+    Route::post('bot-messages/start', [BotMessagesController::class, 'startConversation'])->name('bot-messages.start');
+    Route::post('bot-messages/sync', [BotMessagesController::class, 'sync'])->name('bot-messages.sync');
 });
 
 Route::middleware('throttle:10,1')->group(function () {

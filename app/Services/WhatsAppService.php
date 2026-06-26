@@ -84,12 +84,13 @@ class WhatsAppService
 
         try {
             $response = Http::withHeaders($this->headers())
+                ->timeout(30)
                 ->post("{$this->baseUrl}/message/sendText/{$this->instance}", [
                     'number'  => $phone,
                     'textMessage' => [
                         'text' => $message,
                     ],
-                    'delay'   => 1000,
+                    'delay'   => 0,
                 ]);
 
             return $response->successful();
