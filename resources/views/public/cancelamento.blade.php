@@ -36,7 +36,7 @@
 
                 <a href="{{ url('/reagendar/' . $appointment->confirmation_token) }}"
                    class="block w-full bg-emerald-600 text-white font-semibold rounded-xl py-3 hover:bg-emerald-700 transition-colors">
-                    🔄 Reagendar Horário
+                    Reagendar Horário
                 </a>
             </div>
         @else

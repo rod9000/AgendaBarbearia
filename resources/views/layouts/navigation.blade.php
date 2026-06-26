@@ -1,3 +1,9 @@
+@php
+    $isCadastrosActive = request()->routeIs('admin.customers.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.products.*') || request()->routeIs('admin.sales.*');
+    $isFinanceiroActive = request()->routeIs('admin.financial.*') || request()->routeIs('admin.commissions.*');
+    $isWhatsAppActive = request()->routeIs('admin.settings.whatsapp') || request()->routeIs('admin.settings.evolution') || request()->routeIs('admin.settings.bot') || request()->routeIs('admin.bot-menu.*') || request()->routeIs('admin.bot-messages.*');
+@endphp
+
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-200 shadow-sm dark:bg-stone-800 dark:border-stone-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -17,16 +23,18 @@
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         Agenda
                     </x-nav-link>
+
+                    {{-- Cadastros Dropdown --}}
                     <div class="inline-flex items-center">
                         <x-dropdown align="center" width="48">
                             <x-slot name="trigger">
-                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.customers.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.products.*') || request()->routeIs('admin.sales.*')) border-brand-500 text-brand-700 @endif">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                <x-nav-link :active="$isCadastrosActive">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                     <span>Cadastros</span>
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <svg class="fill-current h-4 w-4 ml-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
-                                </button>
+                                </x-nav-link>
                             </x-slot>
                             <x-slot name="content">
                                 <x-dropdown-link :href="route('admin.customers.index')" :active="request()->routeIs('admin.customers.*')">
@@ -44,16 +52,18 @@
                             </x-slot>
                         </x-dropdown>
                     </div>
+
+                    {{-- Financeiro Dropdown --}}
                     <div class="inline-flex items-center">
                         <x-dropdown align="center" width="48">
                             <x-slot name="trigger">
-                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.financial.*') || request()->routeIs('admin.commissions.*') || request()->routeIs('admin.sales.*')) border-brand-500 text-brand-700 @endif">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <x-nav-link :active="$isFinanceiroActive">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                     <span>Financeiros</span>
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <svg class="fill-current h-4 w-4 ml-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
-                                </button>
+                                </x-nav-link>
                             </x-slot>
                             <x-slot name="content">
                                 <x-dropdown-link :href="route('admin.financial.index')" :active="request()->routeIs('admin.financial.*')">
@@ -68,7 +78,7 @@
                             </x-slot>
                         </x-dropdown>
                     </div>
-                    <x-nav-link :href="route('admin.settings.working-hours')" :active="request()->routeIs('admin.settings.*')">
+                    <x-nav-link :href="route('admin.settings.working-hours')" :active="request()->routeIs('admin.settings.*') && !request()->routeIs('admin.settings.whatsapp') && !request()->routeIs('admin.settings.evolution') && !request()->routeIs('admin.settings.bot')">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         Horários
                     </x-nav-link>
@@ -76,21 +86,20 @@
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
                         Fidelidade
                     </x-nav-link>
+
+                    {{-- WhatsApp Dropdown --}}
                     <div class="inline-flex items-center">
                         <x-dropdown align="center" width="48">
                             <x-slot name="trigger">
-                                <button class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-600 hover:text-brand-700 hover:border-brand-400 focus:outline-none focus:text-brand-700 focus:border-brand-400 transition duration-150 ease-in-out dark:text-stone-400 dark:hover:text-white dark:hover:border-brand-400 dark:focus:text-white dark:focus:border-brand-400 @if(request()->routeIs('admin.settings.whatsapp') || request()->routeIs('admin.settings.evolution') || request()->routeIs('admin.settings.bot') || request()->routeIs('admin.bot-messages.*')) border-brand-500 text-brand-700 @endif">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                <x-nav-link :active="$isWhatsAppActive">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                                     <span>WhatsApp</span>
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                    <svg class="fill-current h-4 w-4 ml-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
-                                </button>
+                                </x-nav-link>
                             </x-slot>
                             <x-slot name="content">
-                                <x-dropdown-link :href="route('admin.settings.whatsapp')" :active="request()->routeIs('admin.settings.whatsapp')">
-                                    Número WhatsApp
-                                </x-dropdown-link>
                                 <x-dropdown-link :href="route('admin.settings.evolution')" :active="request()->routeIs('admin.settings.evolution')">
                                     Evolution API
                                 </x-dropdown-link>
@@ -199,7 +208,7 @@
                     Vendas
                 </x-responsive-nav-link>
             </div>
-            <x-responsive-nav-link :href="route('admin.settings.working-hours')" :active="request()->routeIs('admin.settings.*')">
+            <x-responsive-nav-link :href="route('admin.settings.working-hours')" :active="request()->routeIs('admin.settings.*') && !request()->routeIs('admin.settings.whatsapp') && !request()->routeIs('admin.settings.evolution') && !request()->routeIs('admin.settings.bot')">
                 Horários
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('admin.loyalty.index')" :active="request()->routeIs('admin.loyalty.*')">

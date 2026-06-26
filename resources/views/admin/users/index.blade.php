@@ -11,7 +11,7 @@
 <div class="py-6">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="card-pastel p-0 overflow-hidden">
-            <table class="table-pastel">
+            <table class="table-pastel w-full">
                 <thead>
                     <tr>
                         <th>Nome</th>

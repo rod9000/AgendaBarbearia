@@ -124,7 +124,7 @@
                     <div>
                         <label class="label">Mensagem do Cabeçalho da Conversa</label>
                         <p class="text-xs text-stone-500 mb-2">Cabeçalho exibido quando o cliente inicia a conversa. Deixe vazio para usar o padrão.</p>
-                        <textarea name="welcome_message" rows="3" class="input-pastel" placeholder="Olá! Bem-vindo(a) à barbearia! 💈&#10;&#10;Como posso te ajudar?">{{ old('welcome_message', $company->welcome_message) }}</textarea>
+                        <textarea name="welcome_message" rows="3" class="input-pastel" placeholder="Olá! Bem-vindo(a) à barbearia!&#10;&#10;Como posso te ajudar?">{{ old('welcome_message', $company->welcome_message) }}</textarea>
                         @error('welcome_message') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
 

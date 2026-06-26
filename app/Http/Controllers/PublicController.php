@@ -463,9 +463,9 @@ class PublicController extends Controller
         try {
             $wa = app(\App\Services\WhatsAppService::class);
             $wa->send($appointment->customer->phone,
-                "❌ Seu agendamento foi cancelado.\n" .
+                "Seu agendamento foi cancelado.\n" .
                 "Data: {$appointment->start->format('d/m/Y H:i')}\n\n" .
-                "🔄 Para reagendar: " . url('/reagendar/' . $token)
+                "Para reagendar: " . url('/reagendar/' . $token)
             );
         } catch (\Exception $e) {
             \Log::error('WhatsApp send failed: ' . $e->getMessage());

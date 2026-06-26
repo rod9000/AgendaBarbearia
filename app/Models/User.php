@@ -33,6 +33,16 @@ class User extends Authenticatable
         'active' => 'boolean',
     ];
 
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isBarber()
+    {
+        return $this->role === 'attendant';
+    }
+
     public function appointments()
     {
         return $this->hasMany(Appointment::class);
@@ -46,11 +56,6 @@ class User extends Authenticatable
     public function commissions()
     {
         return $this->hasMany(Commission::class, 'user_id');
-    }
-
-    public function isAdmin()
-    {
-        return $this->role === 'admin';
     }
 
     public function company()

@@ -3,7 +3,7 @@
 @section('header')
     <div class="flex justify-between items-center">
         <h2 class="font-semibold text-xl text-brand-800 leading-tight">Evolution API — WhatsApp</h2>
-        <a href="{{ route('admin.settings.whatsapp') }}" class="btn-pastel-secondary">Número WhatsApp</a>
+        <a href="{{ route('admin.settings.bot') }}" class="btn-pastel-secondary">Configurar Bot</a>
     </div>
 @endsection
 

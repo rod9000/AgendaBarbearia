@@ -2310,9 +2310,6 @@ select {
 .text-right {
   text-align: right;
 }
-.align-top {
-  vertical-align: top;
-}
 .align-bottom {
   vertical-align: bottom;
 }

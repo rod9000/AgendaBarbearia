@@ -29,9 +29,9 @@ class SendBirthdayCongrats extends Command
         $wa = new WhatsAppService();
 
         foreach ($customers as $customer) {
-            $msg = "🎉 Feliz Aniversário, {$customer->name}! 🎂\n"
+            $msg = "Feliz Aniversário, {$customer->name}!\n"
                  . "A equipe da Clínica de Estética deseja um dia maravilhoso cheio de alegria!\n"
-                 . "Para comemorar, agende uma sessão especial conosco! 💆‍♀️✨";
+                 . "Para comemorar, agende uma sessão especial conosco!";
 
             $sent = $wa->send($customer->phone, $msg);
 

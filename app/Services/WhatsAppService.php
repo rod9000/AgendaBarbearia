@@ -117,9 +117,9 @@ class WhatsAppService
              . "Serviços:\n{$serviceList}\n"
              . "Data: {$appointment->start->format('d/m/Y H:i')}\n"
              . "Valor: R$ " . number_format($totalPrice, 2, ',', '.')
-             . "\n\n✅ Confirme sua presença:\n{$confirmLink}"
-             . "\n\n🔄 Precisa remarcar?\n{$rescheduleLink}"
-             . "\n\n❌ Cancelar:\n{$cancelLink}";
+             . "\n\nConfirme sua presença:\n{$confirmLink}"
+             . "\n\nPrecisa remarcar?\n{$rescheduleLink}"
+             . "\n\nCancelar:\n{$cancelLink}";
 
         return $this->send($appointment->customer->phone, $msg);
     }
@@ -134,7 +134,7 @@ class WhatsAppService
         $msg = "Olá {$appointment->customer->name}, seu agendamento foi cancelado.\n"
              . "Serviço: {$serviceList}\n"
              . "Data: {$appointment->start->format('d/m/Y H:i')}\n\n"
-             . "🔄 Para reagendar:\n{$rescheduleLink}";
+             . "Para reagendar:\n{$rescheduleLink}";
 
         return $this->send($appointment->customer->phone, $msg);
     }
@@ -151,8 +151,8 @@ class WhatsAppService
              . "Serviço: {$serviceList}\n"
              . "Data: {$appointment->start->format('d/m/Y H:i')}\n"
              . "Profissional: {$appointment->user->name}\n\n"
-             . "✅ Confirmar presença:\n{$confirmLink}\n\n"
-             . "❌ Cancelar:\n{$cancelLink}";
+             . "Confirmar presença:\n{$confirmLink}\n\n"
+             . "Cancelar:\n{$cancelLink}";
 
         return $this->send($appointment->customer->phone, $msg);
     }

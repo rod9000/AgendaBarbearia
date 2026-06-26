@@ -30,6 +30,14 @@ class Company extends Model
         'evolution_webhook_url',
         'bot_response_delay_minutes',
         'bot_off_hours_enabled',
+        'razao_social',
+        'endereco',
+        'numero',
+        'bairro',
+        'cidade',
+        'cep',
+        'uf',
+        'complemento',
     ];
 
     protected $casts = [
@@ -64,27 +72,17 @@ class Company extends Model
     public function getDefaultWelcomeMessage(): string
     {
         $greeting = $this->welcome_message
-            ?: "Olá! Bem-vindo(a) à {$this->name}! 💈\n\nComo posso te ajudar?";
+            ?: "Olá! Bem-vindo(a) à {$this->name}!\n\nComo posso te ajudar?";
 
         $items = $this->menuItems()->where('is_active', true)->get();
 
         $msg = $greeting . "\n\n";
 
         foreach ($items as $item) {
-            $emoji = match($item->action) {
-                'booking' => '📅',
-                'services' => '💈',
-                'working_hours' => '🕐',
-                'consult' => '📋',
-                'cancel' => '❌',
-                'location' => '📍',
-                'custom' => '💬',
-                default => '•',
-            };
-            $msg .= "{$emoji} {$item->menu_number}️⃣ {$item->label}\n";
+            $msg .= "{$item->menu_number}️⃣ {$item->label}\n";
         }
 
-        $msg .= "🔙 0️⃣ Voltar\n\n";
+        $msg .= "0️⃣ Voltar\n\n";
         $msg .= "Digite o número da opção desejada:";
 
         return $msg;

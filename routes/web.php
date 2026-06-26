@@ -109,6 +109,9 @@ Route::middleware(['auth', 'trial', 'role:admin'])->prefix('admin')->name('admin
     Route::post('settings/evolution/disconnect', [EvolutionController::class, 'disconnect'])->name('settings.evolution.disconnect');
     Route::post('settings/evolution/set-webhook', [EvolutionController::class, 'setWebhook'])->name('settings.evolution.set-webhook');
 
+    Route::get('settings/company', [App\Http\Controllers\Admin\CompanySettingsController::class, 'index'])->name('settings.company');
+    Route::post('settings/company', [App\Http\Controllers\Admin\CompanySettingsController::class, 'store'])->name('settings.company.store');
+
     Route::get('settings/bot', [BotController::class, 'index'])->name('settings.bot');
     Route::post('settings/bot', [BotController::class, 'store'])->name('settings.bot.store');
 

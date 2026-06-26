@@ -40,8 +40,13 @@ class BotHandler
 
         $text = trim($message);
 
-        if (in_array($text, ['0', 'voltar', 'menu', 'inicio', 'início'])) {
+        if (in_array($text, ['menu', 'inicio', 'início'])) {
             $this->conversationService->reset($conversation);
+            $this->send($phone, $company->getDefaultWelcomeMessage());
+            return;
+        }
+
+        if ($text === '0' && $conversation->state === 'initial') {
             $this->send($phone, $company->getDefaultWelcomeMessage());
             return;
         }
@@ -81,7 +86,7 @@ class BotHandler
 
         if (!$menuItem) {
             $options = $menuItems->map(fn($i) => "{$i->menu_number}️⃣ {$i->label}")->implode("\n");
-            $this->send($phone, "Opção inválida. Escolha uma opção:\n\n{$options}");
+            $this->send($phone, "Opção inválida. Escolha uma opção:\n\n{$options}\n\n0️⃣ Voltar\n\nDigite o número da opção desejada:");
             return;
         }
 
@@ -126,6 +131,12 @@ class BotHandler
 
     private function handleChoosingService(Conversation $conversation, string $text): void
     {
+        if (in_array($text, ['0', 'voltar'])) {
+            $this->conversationService->reset($conversation);
+            $this->send($conversation->phone, $conversation->company->getDefaultWelcomeMessage());
+            return;
+        }
+
         $serviceIds = $conversation->getCtx('services', []);
         $index = (int) $text - 1;
 
@@ -160,18 +171,23 @@ class BotHandler
         foreach ($users as $index => $user) {
             $msg .= "{$index}. {$user->name}\n";
         }
-        $msg .= "\nDigite o número do profissional:";
+        $msg .= "\n0️⃣ Voltar ao serviço\n\nDigite o número do profissional:";
 
         $this->send($conversation->phone, $msg);
     }
 
     private function handleChoosingProfessional(Conversation $conversation, string $text): void
     {
+        if (in_array($text, ['0', 'voltar'])) {
+            $this->startBooking($conversation);
+            return;
+        }
+
         $users = User::where('active', true)->where('role', 'attendant')->get()->values();
         $index = (int) $text - 1;
 
         if ($index < 0 || $index >= $users->count()) {
-            $this->send($conversation->phone, "Opção inválida. Digite o número correspondente ao profissional:");
+            $this->send($conversation->phone, "Opção inválida. Digite o número correspondente ao profissional:\n\n0️⃣ Voltar ao serviço");
             return;
         }
 
@@ -186,27 +202,29 @@ class BotHandler
 
     private function handleChoosingDate(Conversation $conversation, string $text): void
     {
+        if (in_array($text, ['0', 'voltar'])) {
+            $this->handleChoosingProfessionalFromBack($conversation);
+            return;
+        }
+
         $date = $this->parseDate($text);
 
         if (!$date) {
-            $this->send($conversation->phone, "Data inválida. Use o formato DD/MM (ex: 25/06):");
+            $this->send($conversation->phone, "Data inválida. Use o formato DD/MM (ex: 25/06).\n\n0️⃣ Voltar ao profissional");
             return;
         }
 
         $carbon = Carbon::parse($date);
 
         if ($carbon->isPast()) {
-            $this->send($conversation->phone, "Essa data já passou. Escolha uma data futura (DD/MM):");
+            $this->send($conversation->phone, "Essa data já passou. Escolha uma data futura (DD/MM).\n\n0️⃣ Voltar ao profissional");
             return;
         }
 
         if ($carbon->dayOfWeek === Carbon::SUNDAY) {
-            $this->send($conversation->phone, "Não atendemos aos domingos. Escolha outra data (DD/MM):");
+            $this->send($conversation->phone, "Não atendemos aos domingos. Escolha outra data (DD/MM).\n\n0️⃣ Voltar ao profissional");
             return;
         }
-
-        $serviceId = $conversation->getCtx('selected_service_id');
-        $service = Service::find($serviceId);
 
         $dayOfWeek = $carbon->dayOfWeek;
         $hasWorkingHours = WorkingHour::where('day_of_week', $dayOfWeek)
@@ -214,7 +232,7 @@ class BotHandler
             ->exists();
 
         if (!$hasWorkingHours) {
-            $this->send($conversation->phone, "Não há atendimento nesse dia. Escolha outra data (DD/MM):");
+            $this->send($conversation->phone, "Não há atendimento nesse dia. Escolha outra data (DD/MM).\n\n0️⃣ Voltar ao profissional");
             return;
         }
 
@@ -225,7 +243,7 @@ class BotHandler
         $slots = $this->getAvailableSlots($conversation, $carbon->format('Y-m-d'));
 
         if (empty($slots)) {
-            $this->send($conversation->phone, "Não há horários disponíveis nessa data. Escolha outra data (DD/MM):");
+            $this->send($conversation->phone, "Não há horários disponíveis nessa data. Escolha outra data (DD/MM).\n\n0️⃣ Voltar ao profissional");
             $this->conversationService->updateState($conversation, 'choosing_date');
             return;
         }
@@ -234,7 +252,7 @@ class BotHandler
         foreach ($slots as $index => $slot) {
             $msg .= "{$index}. {$slot}\n";
         }
-        $msg .= "\nDigite o número do horário:";
+        $msg .= "\n0️⃣ Voltar\n\nDigite o número do horário:";
 
         $this->conversationService->updateState($conversation, 'choosing_time', [
             'selected_date' => $carbon->format('Y-m-d'),
@@ -244,13 +262,38 @@ class BotHandler
         $this->send($conversation->phone, $msg);
     }
 
+    private function handleChoosingProfessionalFromBack(Conversation $conversation): void
+    {
+        $users = User::where('active', true)->where('role', 'attendant')->get();
+
+        $this->conversationService->updateState($conversation, 'choosing_professional', [
+            'services' => $conversation->getCtx('services', []),
+            'selected_service_id' => $conversation->getCtx('selected_service_id'),
+        ]);
+
+        $msg = "Escolha o profissional:\n\n";
+        foreach ($users as $index => $user) {
+            $msg .= "{$index}. {$user->name}\n";
+        }
+        $msg .= "\nDigite o número do profissional:";
+
+        $this->send($conversation->phone, $msg);
+    }
+
     private function handleChoosingTime(Conversation $conversation, string $text): void
     {
+        if (in_array($text, ['0', 'voltar'])) {
+            $selectedDate = $conversation->getCtx('selected_date');
+            $this->send($conversation->phone, "Escolha uma data (DD/MM).\n\n0️⃣ Voltar ao profissional");
+            $this->conversationService->updateState($conversation, 'choosing_date');
+            return;
+        }
+
         $slots = $conversation->getCtx('slots', []);
         $index = (int) $text - 1;
 
         if ($index < 0 || $index >= count($slots)) {
-            $this->send($conversation->phone, "Opção inválida. Digite o número correspondente ao horário:");
+            $this->send($conversation->phone, "Opção inválida. Digite o número correspondente ao horário:\n\n0️⃣ Voltar");
             return;
         }
 
@@ -264,7 +307,7 @@ class BotHandler
 
         $customerName = $conversation->customer?->name ?? 'Cliente';
 
-        $msg = "📅 *Resumo do Agendamento*\n\n"
+        $msg = "*Resumo do Agendamento*\n\n"
             . "Serviço: {$service->name}\n"
             . "Profissional: {$user->name}\n"
             . "Data: {$date}\n"
@@ -346,7 +389,7 @@ class BotHandler
 
         $this->whatsapp->sendConfirmation($appointment);
 
-        $msg = "✅ *Agendamento confirmado!*\n\n"
+        $msg = "*Agendamento confirmado!*\n\n"
             . "Serviço: {$service->name}\n"
             . "Profissional: {$user->name}\n"
             . "Data: {$start->format('d/m/Y')}\n"
@@ -376,20 +419,20 @@ class BotHandler
             ->get()
             ->groupBy('day_of_week');
 
-        $msg = "🕐 *Horários de Funcionamento*\n\n";
+        $msg = "*Horários de Funcionamento*\n\n";
 
         foreach ($days as $dayNum => $dayName) {
             if ($dayNum === Carbon::SUNDAY) {
-                $msg .= "❌ {$dayName}: Fechado\n";
+                $msg .= "{$dayName}: Fechado\n";
                 continue;
             }
 
             if (isset($workingHours[$dayNum])) {
                 $hours = $workingHours[$dayNum];
                 $times = $hours->map(fn($wh) => "{$wh->start_time} às {$wh->end_time}")->implode(' / ');
-                $msg .= "✅ {$dayName}: {$times}\n";
+                $msg .= "{$dayName}: {$times}\n";
             } else {
-                $msg .= "❌ {$dayName}: Fechado\n";
+                $msg .= "{$dayName}: Fechado\n";
             }
         }
 
@@ -408,7 +451,7 @@ class BotHandler
             return;
         }
 
-        $msg = "💈 *Serviços e Preços*\n\n";
+        $msg = "*Serviços e Preços*\n\n";
 
         foreach ($services as $service) {
             $msg .= "• *{$service->name}*\n";
@@ -447,13 +490,13 @@ class BotHandler
             return;
         }
 
-        $msg = "📋 *Seus Próximos Agendamentos*\n\n";
+        $msg = "*Seus Próximos Agendamentos*\n\n";
 
         foreach ($appointments as $index => $appointment) {
             $serviceNames = $appointment->services->pluck('name')->implode(', ');
             $totalPrice = $appointment->services->sum('pivot.price');
 
-            $msg .= "📅 " . $appointment->start->format('d/m/Y H:i') . "\n";
+            $msg .= $appointment->start->format('d/m/Y H:i') . "\n";
             $msg .= "   Serviço: {$serviceNames}\n";
             $msg .= "   Profissional: {$appointment->user->name}\n";
             $msg .= "   Valor: R$ " . number_format($totalPrice, 2, ',', '.') . "\n";
@@ -506,7 +549,7 @@ class BotHandler
             return;
         }
 
-        $msg = "❌ *Cancelar Agendamento*\n\nEscolha o agendamento que deseja cancelar:\n\n";
+        $msg = "*Cancelar Agendamento*\n\nEscolha o agendamento que deseja cancelar:\n\n";
 
         foreach ($appointments as $index => $appointment) {
             $serviceNames = $appointment->services->pluck('name')->implode(', ');
@@ -547,7 +590,7 @@ class BotHandler
 
         $serviceNames = $appointment->services->pluck('name')->implode(', ');
 
-        $msg = "✅ Agendamento cancelado com sucesso!\n\n"
+        $msg = "Agendamento cancelado com sucesso!\n\n"
             . "Serviço: {$serviceNames}\n"
             . "Data: {$appointment->start->format('d/m/Y H:i')}\n\n"
             . "Digite 1 para agendar novamente.\nDigite 0 para voltar ao menu.";
@@ -560,15 +603,15 @@ class BotHandler
     {
         $company = $conversation->company;
 
-        $msg = "📍 *Localização*\n\n"
+        $msg = "*Localização*\n\n"
             . "{$company->name}\n";
 
         if (!empty($company->phone)) {
-            $msg .= "📞 {$company->phone}\n";
+            $msg .= "{$company->phone}\n";
         }
 
         if (!empty($company->email)) {
-            $msg .= "📧 {$company->email}\n";
+            $msg .= "{$company->email}\n";
         }
 
         $msg .= "\nDigite 0 para voltar ao menu.";
@@ -589,12 +632,12 @@ class BotHandler
     private function translateStatus(string $status): string
     {
         return match ($status) {
-            'scheduled' => '📅 Agendado',
-            'confirmed' => '✅ Confirmado',
-            'in_progress' => '🔄 Em andamento',
-            'completed' => '✅ Concluído',
-            'cancelled' => '❌ Cancelado',
-            'no_show' => '⚠️ Não compareceu',
+            'scheduled' => 'Agendado',
+            'confirmed' => 'Confirmado',
+            'in_progress' => 'Em andamento',
+            'completed' => 'Concluído',
+            'cancelled' => 'Cancelado',
+            'no_show' => 'Não compareceu',
             default => $status,
         };
     }
@@ -631,6 +674,51 @@ class BotHandler
             return [];
         }
 
+        $dateCarbon = Carbon::parse($date);
+        $dayOfWeek = $dateCarbon->dayOfWeek;
+
+        $workingHours = WorkingHour::where('day_of_week', $dayOfWeek)
+            ->where('active', true)
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->get();
+
+        if ($workingHours->isEmpty()) {
+            return [];
+        }
+
+        $startWork = $workingHours->min('start_time');
+        $endWork = $workingHours->max('end_time');
+
+        $existingAppointments = Appointment::whereDate('start', $date)
+            ->whereIn('status', ['scheduled', 'confirmed', 'in_progress'])
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->get();
+
+        $slots = [];
+        $current = Carbon::parse("{$date} {$startWork}");
+        $end = Carbon::parse("{$date} {$endWork}");
+
+        while ($current->copy()->addMinutes($service->duration_min)->lte($end)) {
+            $slotEnd = $current->copy()->addMinutes($service->duration_min);
+
+            $overlaps = false;
+            foreach ($existingAppointments as $appointment) {
+                if ($current->lt($appointment->end) && $slotEnd->gt($appointment->start)) {
+                    $overlaps = true;
+                    break;
+                }
+            }
+
+            if (!$overlaps && ($dateCarbon->isFuture() || !$dateCarbon->isToday() || $current->isFuture())) {
+                $slots[] = $current->format('H:i');
+            }
+
+            $current->addMinutes(30);
+        }
+
+        return $slots;
+    }
+
         $dayOfWeek = Carbon::parse($date)->dayOfWeek;
 
         $workingHours = WorkingHour::where('day_of_week', $dayOfWeek)
@@ -665,7 +753,7 @@ class BotHandler
                 }
             }
 
-            if (!$overlaps && $current->isFuture()) {
+            if (!$overlaps && ($carbon->isFuture() || !$carbon->isToday() || $current->isFuture())) {
                 $slots[] = $current->format('H:i');
             }
 
