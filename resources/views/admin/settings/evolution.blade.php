@@ -48,6 +48,15 @@
                         @error('evolution_instance_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <div>
+                        <label class="label">Tipo do WhatsApp</label>
+                        <select name="whatsapp_type" required class="input-pastel">
+                            <option value="normal" {{ old('whatsapp_type', $company->whatsapp_type ?? 'normal') === 'normal' ? 'selected' : '' }}>WhatsApp Normal</option>
+                            <option value="business" {{ old('whatsapp_type', $company->whatsapp_type ?? 'normal') === 'business' ? 'selected' : '' }}>WhatsApp Business</option>
+                        </select>
+                        <p class="text-xs text-stone-400 mt-1">Selecione o tipo de WhatsApp que será conectado</p>
+                        @error('whatsapp_type') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
                         <label class="label">URL do Webhook</label>
                         <input type="url" name="evolution_webhook_url" value="{{ old('evolution_webhook_url', $company->evolution_webhook_url) }}" placeholder="http://host.docker.internal:8001/api/webhook/evolution" class="input-pastel">
                         @error('evolution_webhook_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror

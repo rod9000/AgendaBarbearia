@@ -150,6 +150,9 @@
                             <x-dropdown-link :href="route('admin.logs.index')">
                                 Auditoria
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.settings.company')" :active="request()->routeIs('admin.settings.company')">
+                                Empresa
+                            </x-dropdown-link>
                             @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -216,9 +219,6 @@
             </x-responsive-nav-link>
             <div class="pt-2 pb-1">
                 <div class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider dark:text-stone-500">WhatsApp</div>
-                <x-responsive-nav-link :href="route('admin.settings.whatsapp')" :active="request()->routeIs('admin.settings.whatsapp')">
-                    Número WhatsApp
-                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.settings.evolution')" :active="request()->routeIs('admin.settings.evolution')">
                     Evolution API
                 </x-responsive-nav-link>
@@ -237,6 +237,9 @@
                     <div class="font-medium text-sm text-gray-500 dark:text-stone-400">{{ Auth::user()->email }}</div>
                 </div>
                 <div class="mt-3 space-y-1">
+                    <x-responsive-nav-link :href="route('admin.settings.company')" :active="request()->routeIs('admin.settings.company')">
+                        Empresa
+                    </x-responsive-nav-link>
                     <x-responsive-nav-link href="#" @click.prevent="dark = !dark">
                         Tema: <span x-text="dark ? 'Claro' : 'Escuro'"></span>
                     </x-responsive-nav-link>

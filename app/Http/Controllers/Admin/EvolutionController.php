@@ -34,6 +34,7 @@ class EvolutionController extends Controller
             'evolution_api_key' => 'required|string',
             'evolution_instance_name' => 'required|string|max:50',
             'evolution_webhook_url' => 'nullable|url',
+            'whatsapp_type' => 'required|in:normal,business',
         ]);
 
         $company = Auth::user()->company;

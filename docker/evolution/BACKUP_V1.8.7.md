@@ -1,3 +1,7 @@
+# Evolution API v1.8.7 - Backup
+# Data: 2026-06-29
+
+## docker-compose.yml
 services:
   redis:
     image: redis:7-alpine
@@ -9,27 +13,23 @@ services:
     networks:
       - evolution-net
 
-  postgres:
-    image: postgres:15
-    container_name: evolution_postgres
+  mongodb:
+    image: mongo:6
+    container_name: evolution_mongodb
     restart: always
-    command: postgres -c max_connections=1000
-    environment:
-      POSTGRES_DB: evolution
-      POSTGRES_USER: evolution
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-evolution_pass}
+    command: mongod --quiet
     volumes:
-      - evolution_postgres:/var/lib/postgresql/data
+      - evolution_mongodb:/data/db
     networks:
       - evolution-net
 
   api:
-    image: evoapicloud/evolution-api:v2.3.7
+    image: evoapicloud/evolution-api:v1.8.7
     container_name: evolution_api
     restart: always
     depends_on:
       - redis
-      - postgres
+      - mongodb
     ports:
       - "8080:8080"
     extra_hosts:
@@ -43,21 +43,16 @@ services:
     environment:
       SERVER_URL: ${SERVER_URL:-http://localhost:8080}
       LOG_LEVEL: ERROR
-
       AUTHENTICATION_TYPE: apikey
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-changeme_super_secret_key_2026}
-
       DATABASE_ENABLED: "true"
-      DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: postgresql://evolution:${POSTGRES_PASSWORD:-evolution_pass}@postgres:5432/evolution
-
+      DATABASE_PROVIDER: mongodb
+      DATABASE_CONNECTION_URI: mongodb://mongodb:27017/evolution
       REDIS_ENABLED: "true"
       REDIS_URI: redis://redis:6379
-
       DEL_INSTANCE: "false"
       STORE_INSTANCES: "true"
       STORE_MESSAGES: "true"
-
       WEBHOOK_ENABLED: "true"
       WEBHOOK_URL: ${WEBHOOK_URL:-http://host.docker.internal:8001/api/webhook/evolution}
       WEBHOOK_BY_EVENTS: "true"
@@ -71,4 +66,10 @@ networks:
 volumes:
   evolution_instances:
   evolution_redis:
-  evolution_postgres:
+  evolution_mongodb:
+
+## .env
+EVOLUTION_API_KEY=changeme_super_secret_key_2026
+SERVER_URL=http://localhost:8080
+WEBHOOK_URL=http://host.docker.internal:8001/api/webhook/evolution
+CONFIG_SESSION_PHONE_CLIENT=Chrome

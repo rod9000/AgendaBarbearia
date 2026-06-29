@@ -718,48 +718,4 @@ class BotHandler
 
         return $slots;
     }
-
-        $dayOfWeek = Carbon::parse($date)->dayOfWeek;
-
-        $workingHours = WorkingHour::where('day_of_week', $dayOfWeek)
-            ->where('active', true)
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->get();
-
-        if ($workingHours->isEmpty()) {
-            return [];
-        }
-
-        $startWork = $workingHours->min('start_time');
-        $endWork = $workingHours->max('end_time');
-
-        $existingAppointments = Appointment::whereDate('start', $date)
-            ->whereIn('status', ['scheduled', 'confirmed', 'in_progress'])
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->get();
-
-        $slots = [];
-        $current = Carbon::parse("{$date} {$startWork}");
-        $end = Carbon::parse("{$date} {$endWork}");
-
-        while ($current->copy()->addMinutes($service->duration_min)->lte($end)) {
-            $slotEnd = $current->copy()->addMinutes($service->duration_min);
-
-            $overlaps = false;
-            foreach ($existingAppointments as $appointment) {
-                if ($current->lt($appointment->end) && $slotEnd->gt($appointment->start)) {
-                    $overlaps = true;
-                    break;
-                }
-            }
-
-            if (!$overlaps && ($carbon->isFuture() || !$carbon->isToday() || $current->isFuture())) {
-                $slots[] = $current->format('H:i');
-            }
-
-            $current->addMinutes(30);
-        }
-
-        return $slots;
-    }
 }

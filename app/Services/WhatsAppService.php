@@ -246,7 +246,7 @@ class WhatsAppService
         try {
             $response = Http::withHeaders($this->headers())
                 ->timeout(10)
-                ->delete("{$this->baseUrl}/instance/logout/{$this->instance}");
+                ->post("{$this->baseUrl}/instance/logout/{$this->instance}");
 
             if ($response->successful()) {
                 return ['success' => true, 'message' => 'Desconectado com sucesso'];

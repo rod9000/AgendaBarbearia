@@ -23,6 +23,7 @@ class Company extends Model
         'evolution_api_url',
         'evolution_api_key',
         'evolution_instance_name',
+        'whatsapp_type',
         'webhook_enabled',
         'bot_enabled',
         'welcome_message',
