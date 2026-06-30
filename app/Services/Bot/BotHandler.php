@@ -66,6 +66,9 @@ class BotHandler
             'confirming' => $this->handleConfirming($conversation, $text),
             'consulting_appointments' => $this->handleConsultingAppointments($conversation, $text),
             'cancelling' => $this->handleCancelling($conversation, $text),
+            'rescheduling' => $this->handleRescheduling($conversation, $text),
+            'showing_location' => $this->handleShowingLocation($conversation, $text, $company),
+            'showing_hours' => $this->handleShowingLocation($conversation, $text, $company),
             default => $this->conversationService->reset($conversation),
         };
     }
@@ -77,7 +80,7 @@ class BotHandler
         $menuItems = $company->menuItems()->where('is_active', true)->get();
 
         if ($menuItems->isEmpty()) {
-            $this->send($phone, "Menu não configurado. Digite 0 para voltar.");
+            $this->send($phone, "Menu não configurado. Digite 0️⃣ para voltar.");
             return;
         }
 
@@ -102,7 +105,7 @@ class BotHandler
 
     private function sendCustomResponse(Conversation $conversation, ?string $text): void
     {
-        $this->send($conversation->phone, $text ?: "Sem resposta configurada.\n\nDigite 0 para voltar ao menu.");
+        $this->send($conversation->phone, $text ?: "Sem resposta configurada.\n\n0️⃣ Voltar ao menu.");
     }
 
     private function startBooking(Conversation $conversation): void
@@ -344,6 +347,28 @@ class BotHandler
 
         $time = $slots[$index];
         $date = $conversation->getCtx('selected_date');
+        $rescheduleId = $conversation->getCtx('reschedule_appointment_id');
+
+        if ($rescheduleId) {
+            $appointment = Appointment::find($rescheduleId);
+            if ($appointment) {
+                $appointment->update([
+                    'start' => Carbon::parse("{$date} {$time}"),
+                    'end' => Carbon::parse("{$date} {$time}")->addMinutes($appointment->services->first()->duration_min),
+                ]);
+
+                $serviceNames = $appointment->services->pluck('name')->implode(', ');
+                $msg = "Horário alterado com sucesso!\n\n"
+                    . "Serviço: {$serviceNames}\n"
+                    . "Nova data: {$date}\n"
+                    . "Novo horário: {$time}\n\n"
+                    . "0️⃣ Voltar ao menu.";
+
+                $this->send($conversation->phone, $msg);
+                $this->conversationService->reset($conversation);
+                return;
+            }
+        }
 
         $serviceId = $conversation->getCtx('selected_service_id');
         $service = Service::find($serviceId);
@@ -429,7 +454,7 @@ class BotHandler
         if ($text === '1') {
             $this->createAppointment($conversation);
         } else {
-            $this->send($conversation->phone, "Digite 1 para confirmar ou 0 para voltar ao menu:");
+            $this->send($conversation->phone, "1️⃣ Confirmar ou 0️⃣ Voltar ao menu:");
         }
     }
 
@@ -455,15 +480,18 @@ class BotHandler
 
         if (!$customer) {
             $customer = Customer::where('phone', $phone)->first();
+            if ($customer) {
+                $conversation->update(['customer_id' => $customer->id]);
+            }
         }
 
         if (!$customer) {
-            $customerName = $conversation->customer?->name ?: 'Cliente WhatsApp';
+            $customerName = 'Cliente WhatsApp';
             $customer = Customer::create([
                 'name' => $customerName,
                 'phone' => $phone,
             ]);
-            $this->conversationService->linkCustomer($conversation, $customer);
+            $conversation->update(['customer_id' => $customer->id]);
         }
 
         $start = Carbon::parse("{$date} {$time}");
@@ -496,7 +524,7 @@ class BotHandler
             . "Horário: {$start->format('H:i')}\n"
             . "Valor: R$ " . number_format($service->price, 2, ',', '.') . "\n\n"
             . "Você receberá uma confirmação em breve.\n\n"
-            . "Digite 0 para voltar ao menu principal.";
+            . "0️⃣ Voltar ao menu principal.";
 
         $this->send($phone, $msg);
         $this->conversationService->reset($conversation);
@@ -536,8 +564,9 @@ class BotHandler
             }
         }
 
-        $msg .= "\nDigite 0 para voltar ao menu.";
+        $msg .= "\n0️⃣ Voltar ao menu.";
 
+        $this->conversationService->updateState($conversation, 'showing_hours');
         $this->send($conversation->phone, $msg);
     }
 
@@ -547,7 +576,7 @@ class BotHandler
 
         if ($services->isEmpty()) {
             $this->send($conversation->phone, "No momento não há serviços disponíveis.");
-            $this->send($conversation->phone, "Digite 0 para voltar ao menu.");
+            $this->send($conversation->phone, "0️⃣ Voltar ao menu.");
             return;
         }
 
@@ -562,7 +591,7 @@ class BotHandler
             $msg .= "\n";
         }
 
-        $msg .= "Digite 1 para agendar um horário.\nDigite 0 para voltar ao menu.";
+        $msg .= "1️⃣ Agendar um horário.\n0️⃣ Voltar ao menu.";
 
         $this->send($conversation->phone, $msg);
     }
@@ -572,7 +601,7 @@ class BotHandler
         $customer = $conversation->customer;
 
         if (!$customer) {
-            $this->send($conversation->phone, "Você ainda não possui agendamentos.\n\nDigite 1 para agendar um horário.\nDigite 0 para voltar ao menu.");
+            $this->send($conversation->phone, "Você ainda não possui agendamentos.\n\n1️⃣ Agendar um horário.\n0️⃣ Voltar ao menu.");
             $this->conversationService->reset($conversation);
             return;
         }
@@ -585,7 +614,7 @@ class BotHandler
             ->get();
 
         if ($appointments->isEmpty()) {
-            $this->send($conversation->phone, "Você não possui agendamentos futuros.\n\nDigite 1 para agendar.\nDigite 0 para voltar ao menu.");
+            $this->send($conversation->phone, "Você não possui agendamentos futuros.\n\n1️⃣ Agendar.\n0️⃣ Voltar ao menu.");
             $this->conversationService->reset($conversation);
             return;
         }
@@ -603,7 +632,7 @@ class BotHandler
             $msg .= "   Status: " . $this->translateStatus($appointment->status) . "\n\n";
         }
 
-        $msg .= "Digite 1 para agendar outro.\nDigite 5 para cancelar um agendamento.\nDigite 0 para voltar ao menu.";
+        $msg .= "1️⃣ Agendar outro.\n3️⃣ Alterar horário.\n5️⃣ Cancelar agendamento.\n0️⃣ Voltar ao menu.";
 
         $this->conversationService->updateState($conversation, 'consulting_appointments', [
             'appointment_ids' => $appointments->pluck('id')->toArray(),
@@ -623,11 +652,13 @@ class BotHandler
         if ($text === '1') {
             $this->conversationService->updateState($conversation, 'initial');
             $this->startBooking($conversation);
+        } elseif ($text === '3') {
+            $this->startReschedule($conversation);
         } elseif ($text === '5') {
             $this->conversationService->updateState($conversation, 'initial');
             $this->startCancellation($conversation);
         } else {
-            $this->send($conversation->phone, "Digite 1 para agendar, 5 para cancelar ou 0 para voltar ao menu:");
+            $this->send($conversation->phone, "1️⃣ Agendar, 3️⃣ Alterar, 5️⃣ Cancelar ou 0️⃣ Voltar:");
         }
     }
 
@@ -636,7 +667,7 @@ class BotHandler
         $customer = $conversation->customer;
 
         if (!$customer) {
-            $this->send($conversation->phone, "Você não possui agendamentos para cancelar.\n\nDigite 0 para voltar ao menu.");
+            $this->send($conversation->phone, "Você não possui agendamentos para cancelar.\n\n0️⃣ Voltar ao menu.");
             $this->conversationService->reset($conversation);
             return;
         }
@@ -649,7 +680,7 @@ class BotHandler
             ->get();
 
         if ($appointments->isEmpty()) {
-            $this->send($conversation->phone, "Você não possui agendamentos futuros para cancelar.\n\nDigite 0 para voltar ao menu.");
+            $this->send($conversation->phone, "Você não possui agendamentos futuros para cancelar.\n\n0️⃣ Voltar ao menu.");
             $this->conversationService->reset($conversation);
             return;
         }
@@ -705,10 +736,83 @@ class BotHandler
         $msg = "Agendamento cancelado com sucesso!\n\n"
             . "Serviço: {$serviceNames}\n"
             . "Data: {$appointment->start->format('d/m/Y H:i')}\n\n"
-            . "Digite 1 para agendar novamente.\nDigite 0 para voltar ao menu.";
+            . "1️⃣ Agendar novamente.\n0️⃣ Voltar ao menu.";
 
         $this->send($conversation->phone, $msg);
         $this->conversationService->reset($conversation);
+    }
+
+    private function startReschedule(Conversation $conversation): void
+    {
+        $customer = $conversation->customer;
+
+        if (!$customer) {
+            $this->send($conversation->phone, "Você não possui agendamentos para alterar.\n\n0️⃣ Voltar ao menu.");
+            $this->conversationService->reset($conversation);
+            return;
+        }
+
+        $appointments = Appointment::where('customer_id', $customer->id)
+            ->whereIn('status', ['scheduled', 'confirmed'])
+            ->where('start', '>=', now())
+            ->with('services')
+            ->orderBy('start')
+            ->get();
+
+        if ($appointments->isEmpty()) {
+            $this->send($conversation->phone, "Você não possui agendamentos futuros.\n\n0️⃣ Voltar ao menu.");
+            $this->conversationService->reset($conversation);
+            return;
+        }
+
+        $msg = "*Alterar Horário*\n\nEscolha o agendamento que deseja alterar:\n\n";
+
+        $emojis = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣'];
+        foreach ($appointments as $index => $appointment) {
+            $serviceNames = $appointment->services->pluck('name')->implode(', ');
+            $emoji = $emojis[$index] ?? ($index + 1);
+            $msg .= "{$emoji} {$serviceNames} - {$appointment->start->format('d/m/Y H:i')}\n";
+        }
+
+        $msg .= "\n0️⃣ Voltar ao menu\n\nDigite o número do agendamento:";
+
+        $this->conversationService->updateState($conversation, 'rescheduling', [
+            'appointment_ids' => $appointments->pluck('id')->toArray(),
+        ]);
+
+        $this->send($conversation->phone, $msg);
+    }
+
+    private function handleRescheduling(Conversation $conversation, string $text): void
+    {
+        if (in_array($text, ['0'])) {
+            $this->conversationService->reset($conversation);
+            $this->send($conversation->phone, $conversation->company->getDefaultWelcomeMessage());
+            return;
+        }
+
+        $appointmentIds = $conversation->getCtx('appointment_ids', []);
+        $index = (int) $text - 1;
+
+        if ($index < 0 || $index >= count($appointmentIds)) {
+            $this->send($conversation->phone, "Opção inválida. Digite o número do agendamento:\n\n0️⃣ Voltar");
+            return;
+        }
+
+        $appointmentId = $appointmentIds[$index];
+        $appointment = Appointment::with('services', 'user')->find($appointmentId);
+
+        if (!$appointment) {
+            $this->send($conversation->phone, "Agendamento não encontrado.");
+            $this->conversationService->reset($conversation);
+            return;
+        }
+
+        $this->conversationService->updateState($conversation, 'choosing_date', [
+            'reschedule_appointment_id' => $appointmentId,
+        ]);
+
+        $this->send($conversation->phone, "Escolha a nova data (DD/MM).\n\n0️⃣ Voltar");
     }
 
     private function sendLocation(Conversation $conversation): void
@@ -726,9 +830,22 @@ class BotHandler
             $msg .= "{$company->email}\n";
         }
 
-        $msg .= "\nDigite 0 para voltar ao menu.";
+        $msg .= "\n0️⃣ Voltar ao menu.";
 
+        $this->conversationService->updateState($conversation, 'showing_location');
         $this->send($conversation->phone, $msg);
+    }
+
+    private function handleShowingLocation(Conversation $conversation, string $text, Company $company): void
+    {
+        if (in_array($text, ['0'])) {
+            $this->conversationService->reset($conversation);
+            $this->send($conversation->phone, $company->getDefaultWelcomeMessage());
+            return;
+        }
+
+        $this->conversationService->reset($conversation);
+        $this->send($conversation->phone, $company->getDefaultWelcomeMessage());
     }
 
     private function send(string $phone, string $message): void

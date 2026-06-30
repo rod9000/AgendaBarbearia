@@ -21,6 +21,7 @@ class User extends Authenticatable
         'photo',
         'active',
         'company_id',
+        'default_appointment_view',
     ];
 
     protected $hidden = [

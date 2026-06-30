@@ -163,7 +163,7 @@ function updateSlotLimits(userId) {
 
 document.addEventListener('DOMContentLoaded', function() {
     window.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-        initialView: 'timeGridDay',
+        initialView: '{{ auth()->user()->default_appointment_view ?? 'dayGridMonth' }}',
         locale: 'pt-br',
         firstDay: 0,
         titleFormat: { year: 'numeric', month: 'long' },

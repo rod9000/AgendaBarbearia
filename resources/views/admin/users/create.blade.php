@@ -52,6 +52,16 @@
                     </label>
                 </div>
 
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-brand-700">Visualização padrão da Agenda</label>
+                    <select name="default_appointment_view" required class="input-pastel">
+                        <option value="dayGridMonth" {{ old('default_appointment_view', $user->default_appointment_view ?? 'dayGridMonth') == 'dayGridMonth' ? 'selected' : '' }}>Mensal</option>
+                        <option value="timeGridWeek" {{ old('default_appointment_view', $user->default_appointment_view ?? '') == 'timeGridWeek' ? 'selected' : '' }}>Semanal</option>
+                        <option value="timeGridDay" {{ old('default_appointment_view', $user->default_appointment_view ?? '') == 'timeGridDay' ? 'selected' : '' }}>Diário</option>
+                    </select>
+                    @error('default_appointment_view') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
                 <div class="mb-4" id="permissionsSection">
                     <label class="block text-sm font-medium text-brand-700 mb-2">Permissões de Acesso</label>
                     <p class="text-xs text-brand-400 mb-3">Marque as páginas que este usuário pode acessar.</p>

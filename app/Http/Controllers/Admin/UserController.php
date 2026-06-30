@@ -30,6 +30,7 @@ class UserController extends Controller
             'password' => 'required|string|min:6',
             'phone'    => 'nullable|string|max:20',
             'role'     => 'required|in:admin,attendant',
+            'default_appointment_view' => 'required|in:dayGridMonth,timeGridWeek,timeGridDay',
         ]);
 
         $data['password'] = Hash::make($data['password']);
@@ -63,6 +64,7 @@ class UserController extends Controller
             'password' => 'nullable|string|min:6',
             'phone'    => 'nullable|string|max:20',
             'role'     => 'required|in:admin,attendant',
+            'default_appointment_view' => 'required|in:dayGridMonth,timeGridWeek,timeGridDay',
         ]);
 
         if ($data['password']) {

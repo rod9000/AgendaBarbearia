@@ -14,17 +14,18 @@ class ConversationService
             ->where('phone', $phone)
             ->first();
 
-        if (!$conversation) {
-            $customer = Customer::where('phone', $phone)->first();
+        $customer = Customer::where('phone', $phone)->first();
 
+        if ($customer && $pushName && $customer->name !== $pushName) {
+            $customer->update(['name' => $pushName]);
+        }
+
+        if (!$conversation) {
             if (!$customer) {
-                $customerName = $pushName ?: 'Cliente WhatsApp';
                 $customer = Customer::create([
-                    'name' => $customerName,
+                    'name' => $pushName ?: 'Cliente WhatsApp',
                     'phone' => $phone,
                 ]);
-            } elseif ($pushName) {
-                $customer->update(['name' => $pushName]);
             }
 
             $conversation = Conversation::create([
@@ -38,20 +39,14 @@ class ConversationService
         } else {
             $conversation->update(['last_message_at' => now()]);
 
-            if (!$conversation->customer_id) {
-                $customer = Customer::where('phone', $phone)->first();
-                if (!$customer) {
-                    $customerName = $pushName ?: 'Cliente WhatsApp';
-                    $customer = Customer::create([
-                        'name' => $customerName,
-                        'phone' => $phone,
-                    ]);
-                } elseif ($pushName) {
-                    $customer->update(['name' => $pushName]);
-                }
+            if (!$conversation->customer_id && $customer) {
                 $conversation->update(['customer_id' => $customer->id]);
-            } elseif ($pushName) {
-                $conversation->customer->update(['name' => $pushName]);
+            } elseif (!$conversation->customer_id && !$customer) {
+                $customer = Customer::create([
+                    'name' => $pushName ?: 'Cliente WhatsApp',
+                    'phone' => $phone,
+                ]);
+                $conversation->update(['customer_id' => $customer->id]);
             }
         }
 
