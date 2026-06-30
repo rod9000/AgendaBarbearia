@@ -45,7 +45,7 @@
                             <td class="px-2 py-2 font-medium text-gray-800 dark:text-stone-200">{{ $c->name }}</td>
                             <td class="px-2 py-2 text-stone-600 dark:text-stone-400">{{ $c->cpf }}</td>
                             <td class="px-2 py-2 text-stone-600 dark:text-stone-400">{{ $c->phone }}</td>
-                            <td class="px-2 py-2 text-stone-600 dark:text-stone-400">{{ $c->birth_date->format('d/m/Y') }}</td>
+                            <td class="px-2 py-2 text-stone-600 dark:text-stone-400">{{ $c->birth_date?->format('d/m/Y') ?? '—' }}</td>
                             <td class="px-2 py-2 text-right">
                                 <a href="{{ route('admin.customers.show', $c) }}" class="inline-block px-2 py-1 text-xs font-medium text-brand-600 hover:text-brand-800 dark:text-brand-400">Ver</a>
                                 <a href="{{ route('admin.customers.edit', $c) }}" class="inline-block px-2 py-1 text-xs font-medium text-brand-600 hover:text-brand-800 dark:text-brand-400">Editar</a>

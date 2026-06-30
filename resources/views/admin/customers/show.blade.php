@@ -63,7 +63,7 @@
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-stone-500">Nascimento</dt>
-                            <dd>{{ $customer->birth_date->format('d/m/Y') }}</dd>
+                            <dd>{{ $customer->birth_date?->format('d/m/Y') ?? '—' }}</dd>
                         </div>
                         <div class="flex justify-between">
                             <dt class="text-stone-500">Email</dt>

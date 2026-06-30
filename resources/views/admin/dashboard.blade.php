@@ -267,9 +267,11 @@
                         <li class="py-2 flex justify-between items-center">
                             <span class="text-stone-700">{{ $cust->name }}</span>
                             <span class="text-sm text-brand-500">
-                                {{ $cust->birth_date->format('d/m') }}
-                                @if($cust->birth_date->isToday())
-                                    <span class="badge-pastel bg-rose-100 text-rose-700 ml-1">Hoje!</span>
+                                @if($cust->birth_date)
+                                    {{ $cust->birth_date->format('d/m') }}
+                                    @if($cust->birth_date->isToday())
+                                        <span class="badge-pastel bg-rose-100 text-rose-700 ml-1">Hoje!</span>
+                                    @endif
                                 @endif
                             </span>
                         </li>

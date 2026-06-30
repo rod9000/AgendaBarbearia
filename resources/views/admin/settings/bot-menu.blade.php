@@ -6,10 +6,12 @@
             <a href="{{ route('admin.settings.bot') }}" class="text-stone-500 hover:text-stone-700">&larr; Voltar</a>
             <h2 class="font-semibold text-xl text-brand-800 leading-tight">Menu do Bot</h2>
         </div>
-        <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="btn-pastel-primary">
-            <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Adicionar Item
-        </button>
+        <div class="flex gap-2">
+            <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="btn-pastel-primary">
+                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Adicionar
+            </button>
+        </div>
     </div>
 @endsection
 
@@ -28,7 +30,7 @@
         </div>
         @endif
 
-        {{-- Pré-visualização do Menu --}}
+        {{-- Pré-visualização --}}
         <div class="card-pastel">
             <h3 class="font-semibold text-brand-700 mb-4">Pré-visualização</h3>
             <div class="bg-emerald-50 dark:bg-emerald-900/10 rounded-xl p-4">
@@ -43,14 +45,25 @@
 
         {{-- Lista de Itens --}}
         <div class="card-pastel">
-            <h3 class="font-semibold text-brand-700 mb-4">Itens do Menu</h3>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-brand-700">Itens do Menu</h3>
+                <span class="text-sm text-stone-500">{{ $menuItems->count() }} itens</span>
+            </div>
 
             @if($menuItems->isEmpty())
-                <p class="text-stone-500 text-sm">Nenhum item configurado. Clique em "Adicionar Item" para começar.</p>
+                <p class="text-stone-500 text-sm">Nenhum item configurado. Clique em "Adicionar" para começar.</p>
             @else
                 <div class="space-y-2" id="menuItemsList">
                     @foreach($menuItems as $item)
                         <div class="flex items-center gap-3 p-4 bg-stone-50 dark:bg-stone-800 rounded-xl {{ !$item->is_active ? 'opacity-50' : '' }}" data-id="{{ $item->id }}">
+                            <div class="flex flex-col gap-1 shrink-0">
+                                <button onclick="moveUp({{ $item->id }})" class="text-stone-400 hover:text-brand-600 disabled:opacity-30" @if($loop->first) disabled @endif>
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                </button>
+                                <button onclick="moveDown({{ $item->id }})" class="text-stone-400 hover:text-brand-600 disabled:opacity-30" @if($loop->last) disabled @endif>
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                            </div>
                             <span class="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center text-sm font-bold shrink-0">
                                 {{ $item->menu_number }}
                             </span>
@@ -94,22 +107,9 @@
                 <form method="POST" action="{{ route('admin.bot-menu.store') }}">
                     @csrf
                     <div class="space-y-4">
-                        <div class="flex gap-4">
-                            <div>
-                                <label class="label">Número</label>
-                                <select name="menu_number" required class="input-pastel w-20">
-                                    @for($i = 1; $i <= 9; $i++)
-                                        @php $used = $menuItems->pluck('menu_number')->toArray(); @endphp
-                                        @if(!in_array($i, $used))
-                                            <option value="{{ $i }}">{{ $i }}</option>
-                                        @endif
-                                    @endfor
-                                </select>
-                            </div>
-                            <div class="flex-1">
-                                <label class="label">Label</label>
-                                <input type="text" name="label" required maxlength="100" placeholder="Ex: Agendar horário" class="input-pastel">
-                            </div>
+                        <div>
+                            <label class="label">Label</label>
+                            <input type="text" name="label" required maxlength="100" placeholder="Ex: Agendar horário" class="input-pastel">
                         </div>
                         <div>
                             <label class="label">Ação</label>
@@ -179,7 +179,7 @@
 @push('scripts')
 <script>
 function editItem(id, label, action, responseText, isActive) {
-    document.getElementById('editForm').action = '/admin/bot-menu/' + id;
+    document.getElementById('editForm').action = '{{ url("admin/bot-menu") }}/' + id;
     document.getElementById('editLabel').value = label;
     document.getElementById('editAction').value = action;
     document.getElementById('editResponseText').value = responseText;
@@ -191,11 +191,47 @@ function editItem(id, label, action, responseText, isActive) {
 function toggleCustomText(prefix) {
     var action = document.getElementById(prefix + 'Action').value;
     var div = document.getElementById(prefix + 'CustomText');
-    if (action === 'custom') {
-        div.classList.remove('hidden');
-    } else {
-        div.classList.add('hidden');
+    div.classList.toggle('hidden', action !== 'custom');
+}
+
+function moveUp(id) {
+    var list = document.getElementById('menuItemsList');
+    var items = Array.from(list.children);
+    var index = items.findIndex(el => el.dataset.id == id);
+    if (index > 0) {
+        list.insertBefore(items[index], items[index - 1]);
+        saveOrder();
     }
+}
+
+function moveDown(id) {
+    var list = document.getElementById('menuItemsList');
+    var items = Array.from(list.children);
+    var index = items.findIndex(el => el.dataset.id == id);
+    if (index < items.length - 1) {
+        list.insertBefore(items[index + 1], items[index]);
+        saveOrder();
+    }
+}
+
+function saveOrder() {
+    var list = document.getElementById('menuItemsList');
+    var ids = Array.from(list.children).map(el => el.dataset.id);
+    fetch('{{ route("admin.bot-menu.reorder") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ order: ids })
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            var items = document.querySelectorAll('#menuItemsList > div');
+            items.forEach((el, i) => {
+                el.querySelector('.bg-brand-500').textContent = (i + 1);
+            });
+        }
+    });
 }
 </script>
 @endpush

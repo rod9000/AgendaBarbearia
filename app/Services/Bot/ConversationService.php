@@ -8,7 +8,7 @@ use App\Models\Customer;
 
 class ConversationService
 {
-    public function findOrCreate(string $phone, Company $company): Conversation
+    public function findOrCreate(string $phone, Company $company, ?string $pushName = null): Conversation
     {
         $conversation = Conversation::where('company_id', $company->id)
             ->where('phone', $phone)
@@ -16,6 +16,16 @@ class ConversationService
 
         if (!$conversation) {
             $customer = Customer::where('phone', $phone)->first();
+
+            if (!$customer) {
+                $customerName = $pushName ?: 'Cliente WhatsApp';
+                $customer = Customer::create([
+                    'name' => $customerName,
+                    'phone' => $phone,
+                ]);
+            } elseif ($pushName) {
+                $customer->update(['name' => $pushName]);
+            }
 
             $conversation = Conversation::create([
                 'company_id' => $company->id,
@@ -30,9 +40,18 @@ class ConversationService
 
             if (!$conversation->customer_id) {
                 $customer = Customer::where('phone', $phone)->first();
-                if ($customer) {
-                    $conversation->update(['customer_id' => $customer->id]);
+                if (!$customer) {
+                    $customerName = $pushName ?: 'Cliente WhatsApp';
+                    $customer = Customer::create([
+                        'name' => $customerName,
+                        'phone' => $phone,
+                    ]);
+                } elseif ($pushName) {
+                    $customer->update(['name' => $pushName]);
                 }
+                $conversation->update(['customer_id' => $customer->id]);
+            } elseif ($pushName) {
+                $conversation->customer->update(['name' => $pushName]);
             }
         }
 

@@ -70,6 +70,11 @@ class Company extends Model
         return $this->hasMany(BotMenuItem::class)->orderBy('sort_order');
     }
 
+    public function blockedNumbers()
+    {
+        return $this->hasMany(BlockedNumber::class);
+    }
+
     public function getDefaultWelcomeMessage(): string
     {
         $greeting = $this->welcome_message

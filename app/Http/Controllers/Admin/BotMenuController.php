@@ -23,7 +23,6 @@ class BotMenuController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'menu_number' => 'required|integer|min:1|max:9',
             'label' => 'required|string|max:100',
             'action' => 'required|in:booking,services,working_hours,consult,cancel,location,custom',
             'response_text' => 'nullable|string|max:1000',
@@ -31,26 +30,25 @@ class BotMenuController extends Controller
 
         $company = Auth::user()->company;
 
-        $exists = BotMenuItem::where('company_id', $company->id)
-            ->where('menu_number', $data['menu_number'])
-            ->exists();
+        $existingNumbers = BotMenuItem::where('company_id', $company->id)
+            ->pluck('menu_number')
+            ->toArray();
 
-        if ($exists) {
-            return back()->with('error', "Já existe um item com o número {$data['menu_number']}.");
+        $nextNumber = 1;
+        while (in_array($nextNumber, $existingNumbers)) {
+            $nextNumber++;
         }
-
-        $maxOrder = BotMenuItem::where('company_id', $company->id)->max('sort_order') ?? 0;
 
         BotMenuItem::create([
             'company_id' => $company->id,
-            'menu_number' => $data['menu_number'],
+            'menu_number' => $nextNumber,
             'label' => $data['label'],
             'action' => $data['action'],
             'response_text' => $data['response_text'],
-            'sort_order' => $maxOrder + 1,
+            'sort_order' => $nextNumber,
         ]);
 
-        return back()->with('success', 'Item do menu adicionado!');
+        return back()->with('success', "Item do menu adicionado como opção {$nextNumber}!");
     }
 
     public function update(Request $request, BotMenuItem $menuItem)
@@ -74,7 +72,20 @@ class BotMenuController extends Controller
 
     public function destroy(BotMenuItem $menuItem)
     {
+        $company = Auth::user()->company;
         $menuItem->delete();
+
+        $remaining = BotMenuItem::where('company_id', $company->id)
+            ->orderBy('sort_order')
+            ->get();
+
+        foreach ($remaining as $index => $item) {
+            $item->update([
+                'menu_number' => $index + 1,
+                'sort_order' => $index + 1,
+            ]);
+        }
+
         return back()->with('success', 'Item removido!');
     }
 

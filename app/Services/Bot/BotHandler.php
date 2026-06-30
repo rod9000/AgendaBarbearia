@@ -24,27 +24,25 @@ class BotHandler
         $this->conversationService = $conversationService;
     }
 
-    public function handle(string $phone, string $message, Company $company): void
+    public function handle(string $phone, string $message, Company $company, ?string $pushName = null): void
     {
+        if (\App\Models\BlockedNumber::isBlocked($phone, $company->id)) {
+            return;
+        }
+
         $this->whatsapp->forCompany($company);
-        $this->currentConversation = $this->conversationService->findOrCreate($phone, $company);
+        $this->currentConversation = $this->conversationService->findOrCreate($phone, $company, $pushName);
         $conversation = $this->currentConversation;
 
         $this->conversationService->logMessage($conversation, 'inbound', $message);
 
-        if ($conversation->isExpired() && $conversation->state !== 'initial') {
+        if ($conversation->isExpired()) {
             $this->conversationService->reset($conversation);
             $this->send($phone, $company->getDefaultWelcomeMessage());
             return;
         }
 
         $text = trim($message);
-
-        if (in_array($text, ['menu', 'inicio', 'início'])) {
-            $this->conversationService->reset($conversation);
-            $this->send($phone, $company->getDefaultWelcomeMessage());
-            return;
-        }
 
         if ($text === '0' && $conversation->state === 'initial') {
             $this->send($phone, $company->getDefaultWelcomeMessage());
@@ -64,6 +62,7 @@ class BotHandler
             'choosing_professional' => $this->handleChoosingProfessional($conversation, $text),
             'choosing_date' => $this->handleChoosingDate($conversation, $text),
             'choosing_time' => $this->handleChoosingTime($conversation, $text),
+            'asking_name' => $this->handleAskName($conversation, $text),
             'confirming' => $this->handleConfirming($conversation, $text),
             'consulting_appointments' => $this->handleConsultingAppointments($conversation, $text),
             'cancelling' => $this->handleCancelling($conversation, $text),
@@ -118,7 +117,8 @@ class BotHandler
 
         $msg = "Ótimo! Escolha o serviço desejado:\n\n";
         foreach ($services as $index => $service) {
-            $msg .= ($index + 1) . ". {$service->name} - R$ " . number_format($service->price, 2, ',', '.') . " ({$service->duration_min}min)\n";
+            $emoji = $this->emojiNumber($index + 1);
+            $msg .= "{$emoji} {$service->name} - R$ " . number_format($service->price, 2, ',', '.') . " ({$service->duration_min}min)\n";
         }
         $msg .= "\n0️⃣ Voltar ao menu\n\nDigite o número do serviço:";
 
@@ -131,7 +131,7 @@ class BotHandler
 
     private function handleChoosingService(Conversation $conversation, string $text): void
     {
-        if (in_array($text, ['0', 'voltar'])) {
+        if (in_array($text, ['0'])) {
             $this->conversationService->reset($conversation);
             $this->send($conversation->phone, $conversation->company->getDefaultWelcomeMessage());
             return;
@@ -169,7 +169,8 @@ class BotHandler
 
         $msg = "Serviço: *{$service->name}*\n\nEscolha o profissional:\n\n";
         foreach ($users as $index => $user) {
-            $msg .= ($index + 1) . ". {$user->name}\n";
+            $emoji = $this->emojiNumber($index + 1);
+            $msg .= "{$emoji} {$user->name}\n";
         }
         $msg .= "\n0️⃣ Voltar ao serviço\n\nDigite o número do profissional:";
 
@@ -178,7 +179,7 @@ class BotHandler
 
     private function handleChoosingProfessional(Conversation $conversation, string $text): void
     {
-        if (in_array($text, ['0', 'voltar'])) {
+        if (in_array($text, ['0'])) {
             $this->startBooking($conversation);
             return;
         }
@@ -211,7 +212,7 @@ class BotHandler
 
     private function handleChoosingDate(Conversation $conversation, string $text): void
     {
-        if (in_array($text, ['0', 'voltar'])) {
+        if (in_array($text, ['0'])) {
             $this->handleChoosingProfessionalFromBack($conversation);
             return;
         }
@@ -292,7 +293,8 @@ class BotHandler
 
         $msg = "Data: *{$carbon->format('d/m/Y')}*\n\nHorários disponíveis:\n\n";
         foreach ($slots as $index => $slot) {
-            $msg .= ($index + 1) . ". {$slot}\n";
+            $emoji = $this->emojiNumber($index + 1);
+            $msg .= "{$emoji} {$slot}\n";
         }
         $msg .= "\n0️⃣ Voltar\n\nDigite o número do horário:";
 
@@ -315,7 +317,8 @@ class BotHandler
 
         $msg = "Escolha o profissional:\n\n";
         foreach ($users as $index => $user) {
-            $msg .= ($index + 1) . ". {$user->name}\n";
+            $emoji = $this->emojiNumber($index + 1);
+            $msg .= "{$emoji} {$user->name}\n";
         }
         $msg .= "\n0️⃣ Voltar\n\nDigite o número do profissional:";
 
@@ -324,7 +327,7 @@ class BotHandler
 
     private function handleChoosingTime(Conversation $conversation, string $text): void
     {
-        if (in_array($text, ['0', 'voltar'])) {
+        if (in_array($text, ['0'])) {
             $selectedDate = $conversation->getCtx('selected_date');
             $this->send($conversation->phone, "Escolha uma data (DD/MM).\n\n0️⃣ Voltar ao profissional");
             $this->conversationService->updateState($conversation, 'choosing_date');
@@ -347,7 +350,15 @@ class BotHandler
         $userId = $conversation->getCtx('selected_user_id');
         $user = User::find($userId);
 
-        $customerName = $conversation->customer?->name ?? 'Cliente';
+        $customerName = $conversation->customer?->name;
+
+        if (!$customerName || $customerName === 'Cliente WhatsApp') {
+            $this->conversationService->updateState($conversation, 'asking_name', [
+                'selected_time' => $time,
+            ]);
+            $this->send($conversation->phone, "Qual é o seu nome?");
+            return;
+        }
 
         $msg = "*Resumo do Agendamento*\n\n"
             . "Serviço: {$service->name}\n"
@@ -357,7 +368,48 @@ class BotHandler
             . "Valor: R$ " . number_format($service->price, 2, ',', '.') . "\n"
             . "Cliente: {$customerName}\n\n"
             . "1️⃣ Confirmar agendamento\n"
-            . "2️⃣ Cancelar e voltar ao menu";
+            . "0️⃣ Cancelar e voltar ao menu";
+
+        $this->conversationService->updateState($conversation, 'confirming', [
+            'selected_time' => $time,
+        ]);
+
+        $this->send($conversation->phone, $msg);
+    }
+
+    private function handleAskName(Conversation $conversation, string $text): void
+    {
+        if (in_array($text, ['0'])) {
+            $this->conversationService->reset($conversation);
+            $this->send($conversation->phone, $conversation->company->getDefaultWelcomeMessage());
+            return;
+        }
+
+        $name = trim($text);
+
+        if (empty($name) || mb_strlen($name) < 2) {
+            $this->send($conversation->phone, "Por favor, digite seu nome:");
+            return;
+        }
+
+        $conversation->customer->update(['name' => $name]);
+
+        $serviceId = $conversation->getCtx('selected_service_id');
+        $service = Service::find($serviceId);
+        $userId = $conversation->getCtx('selected_user_id');
+        $user = User::find($userId);
+        $date = $conversation->getCtx('selected_date');
+        $time = $conversation->getCtx('selected_time');
+
+        $msg = "*Resumo do Agendamento*\n\n"
+            . "Serviço: {$service->name}\n"
+            . "Profissional: {$user->name}\n"
+            . "Data: {$date}\n"
+            . "Horário: {$time}\n"
+            . "Valor: R$ " . number_format($service->price, 2, ',', '.') . "\n"
+            . "Cliente: {$name}\n\n"
+            . "1️⃣ Confirmar agendamento\n"
+            . "0️⃣ Cancelar e voltar ao menu";
 
         $this->conversationService->updateState($conversation, 'confirming', [
             'selected_time' => $time,
@@ -368,13 +420,16 @@ class BotHandler
 
     private function handleConfirming(Conversation $conversation, string $text): void
     {
+        if (in_array($text, ['0'])) {
+            $this->conversationService->reset($conversation);
+            $this->send($conversation->phone, $conversation->company->getDefaultWelcomeMessage());
+            return;
+        }
+
         if ($text === '1') {
             $this->createAppointment($conversation);
-        } elseif ($text === '2') {
-            $this->conversationService->reset($conversation);
-            $this->send($conversation->phone, "Agendamento cancelado. Voltando ao menu principal.\n\n" . $conversation->company->getDefaultWelcomeMessage());
         } else {
-            $this->send($conversation->phone, "Digite 1 para confirmar ou 2 para cancelar:");
+            $this->send($conversation->phone, "Digite 1 para confirmar ou 0 para voltar ao menu:");
         }
     }
 
@@ -395,17 +450,20 @@ class BotHandler
             return;
         }
 
+        $conversation->load('customer');
         $customer = $conversation->customer;
+
         if (!$customer) {
             $customer = Customer::where('phone', $phone)->first();
-            if (!$customer) {
-                $customer = Customer::create([
-                    'name' => 'Cliente WhatsApp',
-                    'phone' => $phone,
-                    'created_by' => null,
-                ]);
-                $this->conversationService->linkCustomer($conversation, $customer);
-            }
+        }
+
+        if (!$customer) {
+            $customerName = $conversation->customer?->name ?: 'Cliente WhatsApp';
+            $customer = Customer::create([
+                'name' => $customerName,
+                'phone' => $phone,
+            ]);
+            $this->conversationService->linkCustomer($conversation, $customer);
         }
 
         $start = Carbon::parse("{$date} {$time}");
@@ -556,6 +614,12 @@ class BotHandler
 
     private function handleConsultingAppointments(Conversation $conversation, string $text): void
     {
+        if (in_array($text, ['0'])) {
+            $this->conversationService->reset($conversation);
+            $this->send($conversation->phone, $conversation->company->getDefaultWelcomeMessage());
+            return;
+        }
+
         if ($text === '1') {
             $this->conversationService->updateState($conversation, 'initial');
             $this->startBooking($conversation);
@@ -563,8 +627,7 @@ class BotHandler
             $this->conversationService->updateState($conversation, 'initial');
             $this->startCancellation($conversation);
         } else {
-            $this->conversationService->reset($conversation);
-            $this->send($conversation->phone, "Voltando ao menu principal.\n\n" . $conversation->company->getDefaultWelcomeMessage());
+            $this->send($conversation->phone, "Digite 1 para agendar, 5 para cancelar ou 0 para voltar ao menu:");
         }
     }
 
@@ -595,7 +658,8 @@ class BotHandler
 
         foreach ($appointments as $index => $appointment) {
             $serviceNames = $appointment->services->pluck('name')->implode(', ');
-            $msg .= ($index + 1) . ". {$serviceNames} - {$appointment->start->format('d/m/Y H:i')}\n";
+            $emoji = $this->emojiNumber($index + 1);
+            $msg .= "{$emoji} {$serviceNames} - {$appointment->start->format('d/m/Y H:i')}\n";
         }
 
         $msg .= "\n0️⃣ Voltar ao menu\n\nDigite o número do agendamento:";
@@ -609,6 +673,12 @@ class BotHandler
 
     private function handleCancelling(Conversation $conversation, string $text): void
     {
+        if (in_array($text, ['0'])) {
+            $this->conversationService->reset($conversation);
+            $this->send($conversation->phone, $conversation->company->getDefaultWelcomeMessage());
+            return;
+        }
+
         $appointmentIds = $conversation->getCtx('appointment_ids', []);
         $index = (int) $text - 1;
 
@@ -816,5 +886,19 @@ class BotHandler
         }
 
         return $suggestions;
+    }
+
+    private function emojiNumber(int $number): string
+    {
+        $emojis = [
+            0 => '0️⃣', 1 => '1️⃣', 2 => '2️⃣', 3 => '3️⃣', 4 => '4️⃣',
+            5 => '5️⃣', 6 => '6️⃣', 7 => '7️⃣', 8 => '8️⃣', 9 => '9️⃣',
+        ];
+        $digits = str_split((string) $number);
+        $result = '';
+        foreach ($digits as $digit) {
+            $result .= $emojis[(int) $digit];
+        }
+        return $result;
     }
 }

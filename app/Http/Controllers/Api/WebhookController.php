@@ -15,7 +15,13 @@ class WebhookController extends Controller
 {
     public function receive(Request $request, BotHandler $botHandler): JsonResponse
     {
-        $payload = $request->json()->all() ?: $request->all();
+        $raw = $request->getContent();
+        $payload = json_decode($raw, true);
+
+        if (!is_array($payload)) {
+            Log::warning('[Webhook] JSON parse failed', ['raw' => substr($raw, 0, 500)]);
+            return response()->json(['status' => 'invalid_json'], 200);
+        }
 
         if (isset($payload['body']) && is_array($payload['body'])) {
             $payload = $payload['body'];
@@ -37,8 +43,9 @@ class WebhookController extends Controller
 
         $phone = $this->extractPhone($data);
         $message = $this->extractMessage($data);
+        $pushName = $data['pushName'] ?? null;
 
-        Log::info('[Webhook Evolution] Mensagem processada:', ['phone' => $phone, 'message' => $message]);
+        Log::info('[Webhook Evolution] Mensagem processada:', ['phone' => $phone, 'message' => $message, 'pushName' => $pushName]);
 
         if (!$phone || !$message) {
             return response()->json(['status' => 'no_data'], 200);
@@ -56,7 +63,7 @@ class WebhookController extends Controller
             return response()->json(['status' => 'bot_disabled'], 200);
         }
 
-        $botHandler->handle($phone, $message, $company);
+        $botHandler->handle($phone, $message, $company, $pushName);
 
         return response()->json(['status' => 'ok']);
     }

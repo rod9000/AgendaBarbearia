@@ -32,7 +32,7 @@
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-brand-700">Data de Nascimento</label>
-                    <input type="date" name="birth_date" value="{{ old('birth_date', isset($customer) ? $customer->birth_date->format('Y-m-d') : '') }}" required class="input-pastel">
+                    <input type="date" name="birth_date" value="{{ old('birth_date', isset($customer) && $customer->birth_date ? $customer->birth_date->format('Y-m-d') : '') }}" class="input-pastel">
                     @error('birth_date') <p class="text-rose-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 

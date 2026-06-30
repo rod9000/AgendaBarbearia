@@ -88,9 +88,8 @@ class WhatsAppService
             $response = Http::withHeaders($this->headers())
                 ->timeout(30)
                 ->post("{$this->baseUrl}/message/sendText/{$this->instance}", [
-                    'number'  => $phone,
-                    'text' => $message,
-                    'delay'   => 0,
+                    'number' => $phone,
+                    'text'   => $message,
                 ]);
 
             Log::info('[WhatsApp] Resposta:', ['status' => $response->status(), 'body' => $response->body()]);

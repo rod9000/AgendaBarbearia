@@ -191,10 +191,7 @@
         <div class="card-pastel">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-semibold text-brand-700">Menu do Bot</h3>
-                <button onclick="document.getElementById('addMenuModal').classList.remove('hidden')" class="btn-pastel-primary text-sm">
-                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Adicionar
-                </button>
+                <a href="{{ route('admin.bot-menu.index') }}" class="btn-pastel-secondary text-sm">Gerenciar Itens</a>
             </div>
             <p class="text-sm text-stone-500 mb-4">Configure as opções que aparecem no menu de boas-vindas do bot.</p>
 
@@ -274,120 +271,10 @@
 
     </div>
 </div>
-
-{{-- Modal Adicionar Menu Item --}}
-<div id="addMenuModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-gray-500 dark:bg-stone-900 bg-opacity-75" onclick="document.getElementById('addMenuModal').classList.add('hidden')"></div>
-        <div class="inline-block align-bottom bg-white dark:bg-stone-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-brand-700 mb-4">Adicionar Item do Menu</h3>
-                <form method="POST" action="{{ route('admin.bot-menu.store') }}">
-                    @csrf
-                    <div class="space-y-4">
-                        <div class="flex gap-4">
-                            <div>
-                                <label class="label">Número</label>
-                                <select name="menu_number" required class="input-pastel w-20">
-                                    @for($i = 1; $i <= 9; $i++)
-                                        @if(!in_array($i, $menuItems->pluck('menu_number')->toArray()))
-                                            <option value="{{ $i }}">{{ $i }}</option>
-                                        @endif
-                                    @endfor
-                                </select>
-                            </div>
-                            <div class="flex-1">
-                                <label class="label">Label</label>
-                                <input type="text" name="label" required maxlength="100" placeholder="Ex: Agendar horário" class="input-pastel">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="label">Ação</label>
-                            <select name="action" id="addAction" required class="input-pastel" onchange="toggleAddCustom()">
-                                @foreach($actionTypes as $key => $label)
-                                    <option value="{{ $key }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div id="addCustomText" class="hidden">
-                            <label class="label">Texto da Resposta</label>
-                            <textarea name="response_text" rows="3" maxlength="1000" placeholder="Texto que o bot vai enviar..." class="input-pastel"></textarea>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button type="button" onclick="document.getElementById('addMenuModal').classList.add('hidden')" class="btn-pastel-secondary">Cancelar</button>
-                        <button type="submit" class="btn-pastel-primary">Adicionar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- Modal Editar Menu Item --}}
-<div id="editMenuModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-gray-500 dark:bg-stone-900 bg-opacity-75" onclick="document.getElementById('editMenuModal').classList.add('hidden')"></div>
-        <div class="inline-block align-bottom bg-white dark:bg-stone-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-brand-700 mb-4">Editar Item do Menu</h3>
-                <form id="editMenuForm" method="POST">
-                    @csrf @method('PUT')
-                    <div class="space-y-4">
-                        <div>
-                            <label class="label">Label</label>
-                            <input type="text" name="label" id="editMenuLabel" required maxlength="100" class="input-pastel">
-                        </div>
-                        <div>
-                            <label class="label">Ação</label>
-                            <select name="action" id="editMenuAction" required class="input-pastel" onchange="toggleEditCustom()">
-                                @foreach($actionTypes as $key => $label)
-                                    <option value="{{ $key }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div id="editCustomText" class="hidden">
-                            <label class="label">Texto da Resposta</label>
-                            <textarea name="response_text" id="editMenuResponseText" rows="3" maxlength="1000" class="input-pastel"></textarea>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" name="is_active" id="editMenuIsActive" value="1" class="rounded">
-                            <label class="text-sm text-stone-700">Ativo</label>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button type="button" onclick="document.getElementById('editMenuModal').classList.add('hidden')" class="btn-pastel-secondary">Cancelar</button>
-                        <button type="submit" class="btn-pastel-primary">Salvar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @push('scripts')
 <script>
-function editMenuItem(id, label, action, responseText, isActive) {
-    document.getElementById('editMenuForm').action = '{{ url("admin/bot-menu") }}/' + id;
-    document.getElementById('editMenuLabel').value = label;
-    document.getElementById('editMenuAction').value = action;
-    document.getElementById('editMenuResponseText').value = responseText;
-    document.getElementById('editMenuIsActive').checked = isActive;
-    toggleEditCustom();
-    document.getElementById('editMenuModal').classList.remove('hidden');
-}
-
-function toggleAddCustom() {
-    var action = document.getElementById('addAction').value;
-    document.getElementById('addCustomText').classList.toggle('hidden', action !== 'custom');
-}
-
-function toggleEditCustom() {
-    var action = document.getElementById('editMenuAction').value;
-    document.getElementById('editCustomText').classList.toggle('hidden', action !== 'custom');
-}
-
 function toggleDay(day, checked) {
     var container = document.getElementById('hours_' + day);
     var inputs = container.querySelectorAll('input[type="time"]');

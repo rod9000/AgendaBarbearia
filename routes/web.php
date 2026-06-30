@@ -20,6 +20,8 @@ use App\Http\Controllers\Admin\EvolutionController;
 use App\Http\Controllers\Admin\BotController;
 use App\Http\Controllers\Admin\BotMessagesController;
 use App\Http\Controllers\Admin\BotMenuController;
+use App\Http\Controllers\Admin\BlockedNumberController;
+use App\Http\Controllers\Admin\WebhookLogController;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -120,6 +122,13 @@ Route::middleware(['auth', 'trial', 'role:admin'])->prefix('admin')->name('admin
     Route::put('bot-menu/{menuItem}', [BotMenuController::class, 'update'])->name('bot-menu.update');
     Route::delete('bot-menu/{menuItem}', [BotMenuController::class, 'destroy'])->name('bot-menu.destroy');
     Route::post('bot-menu/reorder', [BotMenuController::class, 'reorder'])->name('bot-menu.reorder');
+
+    Route::get('settings/blocked-numbers', [BlockedNumberController::class, 'index'])->name('blocked-numbers.index');
+    Route::post('settings/blocked-numbers', [BlockedNumberController::class, 'store'])->name('blocked-numbers.store');
+    Route::delete('settings/blocked-numbers/{blockedNumber}', [BlockedNumberController::class, 'destroy'])->name('blocked-numbers.destroy');
+
+    Route::get('webhook-logs', [WebhookLogController::class, 'index'])->name('webhook-logs.index');
+    Route::get('webhook-logs/{webhook}', [WebhookLogController::class, 'show'])->name('webhook-logs.show');
 
     Route::get('bot-messages', [BotMessagesController::class, 'index'])->name('bot-messages.index');
     Route::get('bot-messages/{conversation}', [BotMessagesController::class, 'show'])->name('bot-messages.show');

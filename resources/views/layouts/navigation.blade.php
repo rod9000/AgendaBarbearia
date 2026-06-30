@@ -1,7 +1,7 @@
 @php
-    $isCadastrosActive = request()->routeIs('admin.customers.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.products.*') || request()->routeIs('admin.sales.*');
-    $isFinanceiroActive = request()->routeIs('admin.financial.*') || request()->routeIs('admin.commissions.*');
-    $isWhatsAppActive = request()->routeIs('admin.settings.whatsapp') || request()->routeIs('admin.settings.evolution') || request()->routeIs('admin.settings.bot') || request()->routeIs('admin.bot-menu.*') || request()->routeIs('admin.bot-messages.*');
+    $isCadastrosActive = request()->routeIs('admin.customers.*') || request()->routeIs('admin.services.*') || request()->routeIs('admin.products.*');
+    $isFinanceiroActive = request()->routeIs('admin.financial.*') || request()->routeIs('admin.commissions.*') || request()->routeIs('admin.sales.*');
+    $isWhatsAppActive = request()->routeIs('admin.settings.whatsapp') || request()->routeIs('admin.settings.evolution') || request()->routeIs('admin.settings.bot') || request()->routeIs('admin.bot-menu.*') || request()->routeIs('admin.bot-messages.*') || request()->routeIs('admin.blocked-numbers.*') || request()->routeIs('admin.webhook-logs.*');
 @endphp
 
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-200 shadow-sm dark:bg-stone-800 dark:border-stone-700">
@@ -14,15 +14,19 @@
                     </a>
                 </div>
 
-                <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                        Dashboard
-                    </x-nav-link>
-                    <x-nav-link :href="route('admin.appointments.index')" :active="request()->routeIs('admin.appointments.*')">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        Agenda
-                    </x-nav-link>
+                <div class="hidden space-x-8 sm:ml-10 sm:flex sm:items-stretch">
+                    <div class="inline-flex items-center">
+                        <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                            Dashboard
+                        </x-nav-link>
+                    </div>
+                    <div class="inline-flex items-center">
+                        <x-nav-link :href="route('admin.appointments.index')" :active="request()->routeIs('admin.appointments.*')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Agenda
+                        </x-nav-link>
+                    </div>
 
                     {{-- Cadastros Dropdown --}}
                     <div class="inline-flex items-center">
@@ -78,14 +82,18 @@
                             </x-slot>
                         </x-dropdown>
                     </div>
-                    <x-nav-link :href="route('admin.settings.working-hours')" :active="request()->routeIs('admin.settings.*') && !request()->routeIs('admin.settings.whatsapp') && !request()->routeIs('admin.settings.evolution') && !request()->routeIs('admin.settings.bot')">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        Horários
-                    </x-nav-link>
-                    <x-nav-link :href="route('admin.loyalty.index')" :active="request()->routeIs('admin.loyalty.*')">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
-                        Fidelidade
-                    </x-nav-link>
+                    <div class="inline-flex items-center">
+                        <x-nav-link :href="route('admin.settings.working-hours')" :active="request()->routeIs('admin.settings.*') && !request()->routeIs('admin.settings.whatsapp') && !request()->routeIs('admin.settings.evolution') && !request()->routeIs('admin.settings.bot')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Horários
+                        </x-nav-link>
+                    </div>
+                    <div class="inline-flex items-center">
+                        <x-nav-link :href="route('admin.loyalty.index')" :active="request()->routeIs('admin.loyalty.*')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                            Fidelidade
+                        </x-nav-link>
+                    </div>
 
                     {{-- WhatsApp Dropdown --}}
                     <div class="inline-flex items-center">
@@ -109,18 +117,24 @@
                                 <x-dropdown-link :href="route('admin.bot-messages.index')" :active="request()->routeIs('admin.bot-messages.*')">
                                     Mensagens do Bot
                                 </x-dropdown-link>
+                                <x-dropdown-link :href="route('admin.blocked-numbers.index')" :active="request()->routeIs('admin.blocked-numbers.*')">
+                                    Bloquear Números
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('admin.webhook-logs.index')" :active="request()->routeIs('admin.webhook-logs.*')">
+                                    Webhooks
+                                </x-dropdown-link>
                             </x-slot>
                         </x-dropdown>
                     </div>
                 </div>
             </div>
 
-            <div class="hidden sm:flex sm:items-center sm:ml-6">
+            <div class="hidden sm:flex sm:items-center sm:ml-6 shrink-0">
                 <button @click="dark = !dark" class="mr-3 p-2 rounded-lg text-gray-400 hover:text-brand-600 hover:bg-brand-50 dark:text-stone-400 dark:hover:text-white dark:hover:bg-stone-700 transition-colors" title="Alternar tema">
-                    <svg x-show="!dark" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg x-show="!dark" x-cloak class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                     </svg>
-                    <svg x-show="dark" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg x-show="dark" x-cloak class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
                 </button>

@@ -61,6 +61,7 @@ class Conversation extends Model
             return true;
         }
 
+        $this->loadMissing('company');
         $timeout = $this->company?->bot_response_delay_minutes ?? 60;
 
         if ($timeout <= 0) {
