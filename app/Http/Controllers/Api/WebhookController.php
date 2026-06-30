@@ -15,7 +15,7 @@ class WebhookController extends Controller
 {
     public function receive(Request $request, BotHandler $botHandler): JsonResponse
     {
-        $payload = $request->all();
+        $payload = $request->json()->all() ?: $request->all();
 
         if (isset($payload['body']) && is_array($payload['body'])) {
             $payload = $payload['body'];

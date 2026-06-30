@@ -106,10 +106,6 @@ class Company extends Model
         $now = now()->setTimezone('America/Sao_Paulo');
         $dayOfWeek = $now->dayOfWeek;
 
-        if ($dayOfWeek === Carbon::SUNDAY) {
-            return false;
-        }
-
         $workingHours = \App\Models\WorkingHour::where('day_of_week', $dayOfWeek)
             ->where('active', true)
             ->get();
@@ -120,8 +116,17 @@ class Company extends Model
 
         $currentTime = $now->format('H:i:s');
         foreach ($workingHours as $wh) {
-            if ($currentTime >= $wh->start_time && $currentTime <= $wh->end_time) {
-                return true;
+            $start = $wh->start_time;
+            $end = $wh->end_time;
+
+            if ($end === '00:00:00') {
+                if ($currentTime >= $start) {
+                    return true;
+                }
+            } else {
+                if ($currentTime >= $start && $currentTime <= $end) {
+                    return true;
+                }
             }
         }
 

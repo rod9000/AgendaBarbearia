@@ -146,30 +146,45 @@
         {{-- Horários de Funcionamento --}}
         <div class="card-pastel">
             <h3 class="font-semibold text-brand-700 mb-4">Horários de Funcionamento</h3>
-            <p class="text-sm text-stone-500 mb-4">Configure os horários que o bot vai respeitar para mensagens fora do horário.</p>
-            @php
-                $days = [1 => 'Segunda', 2 => 'Terça', 3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sábado'];
-            @endphp
-            <div class="space-y-2">
-                @foreach($days as $dayNum => $dayName)
-                    @php
-                        $wh = \App\Models\WorkingHour::where('day_of_week', $dayNum)->where('active', true)->first();
-                    @endphp
-                    <div class="flex items-center gap-4 p-3 bg-stone-50 dark:bg-stone-800 rounded-xl">
-                        <span class="w-24 font-medium text-stone-700 dark:text-stone-300 text-sm">{{ $dayName }}</span>
-                        @if($wh)
-                            <span class="text-emerald-600 font-medium text-sm">{{ substr($wh->start_time, 0, 5) }} às {{ substr($wh->end_time, 0, 5) }}</span>
-                        @else
-                            <span class="text-stone-400 text-sm">Fechado</span>
-                        @endif
-                    </div>
-                @endforeach
-                <div class="flex items-center gap-4 p-3 bg-stone-50 dark:bg-stone-800 rounded-xl">
-                    <span class="w-24 font-medium text-stone-700 dark:text-stone-300 text-sm">Domingo</span>
-                    <span class="text-stone-400 text-sm">Fechado</span>
+            <p class="text-sm text-stone-500 mb-4">Configure os horários que o bot vai respeitar. Fora desses horários, o bot responde com a mensagem de "fora do horário".</p>
+
+            <form method="POST" action="{{ route('admin.settings.bot.store') }}">
+                @csrf
+                <input type="hidden" name="save_hours" value="1">
+
+                @php
+                    $days = [1 => 'Segunda', 2 => 'Terça', 3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sábado', 0 => 'Domingo'];
+                    $defaultStart = '08:00';
+                    $defaultEnd = '00:00';
+                @endphp
+
+                <div class="space-y-2">
+                    @foreach($days as $dayNum => $dayName)
+                        @php
+                            $wh = \App\Models\WorkingHour::where('day_of_week', $dayNum)->where('active', true)->first();
+                            $startTime = $wh ? substr($wh->start_time, 0, 5) : '';
+                            $endTime = $wh ? substr($wh->end_time, 0, 5) : '';
+                            $isActive = $wh ? true : false;
+                        @endphp
+                        <div class="flex items-center gap-3 p-3 bg-stone-50 dark:bg-stone-800 rounded-xl">
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" name="hours[{{ $dayNum }}][active]" value="1" {{ $isActive ? 'checked' : '' }} class="sr-only peer" onchange="toggleDay({{ $dayNum }}, this.checked)">
+                                <div class="w-9 h-5 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                            <span class="w-20 font-medium text-stone-700 dark:text-stone-300 text-sm shrink-0">{{ $dayName }}</span>
+                            <div id="hours_{{ $dayNum }}" class="flex items-center gap-2 flex-1 {{ $isActive ? '' : 'opacity-40 pointer-events-none' }}">
+                                <input type="time" name="hours[{{ $dayNum }}][start_time]" value="{{ $startTime ?: $defaultStart }}" class="input-pastel w-32 text-sm" {{ $isActive ? '' : 'disabled' }}>
+                                <span class="text-stone-400 text-sm">até</span>
+                                <input type="time" name="hours[{{ $dayNum }}][end_time]" value="{{ $endTime ?: $defaultEnd }}" class="input-pastel w-32 text-sm" {{ $isActive ? '' : 'disabled' }}>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
-            </div>
-            <p class="text-xs text-stone-400 mt-3">Para alterar os horários, acesse <a href="{{ route('admin.settings.working-hours') }}" class="text-brand-600 hover:underline">Configurações → Horários</a></p>
+
+                <div class="mt-4 flex justify-end">
+                    <button type="submit" class="btn-pastel-primary">Salvar Horários</button>
+                </div>
+            </form>
         </div>
 
         {{-- Menu do Bot --}}
@@ -371,6 +386,16 @@ function toggleAddCustom() {
 function toggleEditCustom() {
     var action = document.getElementById('editMenuAction').value;
     document.getElementById('editCustomText').classList.toggle('hidden', action !== 'custom');
+}
+
+function toggleDay(day, checked) {
+    var container = document.getElementById('hours_' + day);
+    var inputs = container.querySelectorAll('input[type="time"]');
+    inputs.forEach(function(input) {
+        input.disabled = !checked;
+    });
+    container.classList.toggle('opacity-40', !checked);
+    container.classList.toggle('pointer-events-none', !checked);
 }
 </script>
 @endpush

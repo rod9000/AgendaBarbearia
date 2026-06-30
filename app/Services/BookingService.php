@@ -65,7 +65,8 @@ class BookingService
         }
 
         $startWork = $workingHours->min('start_time');
-        $endWork = $workingHours->max('end_time');
+        $hasMidnight = $workingHours->contains('end_time', '00:00:00');
+        $endWork = $hasMidnight ? '00:00:00' : $workingHours->max('end_time');
 
         $existingAppointments = Appointment::whereDate('start', $date)
             ->whereIn('status', ['scheduled', 'confirmed', 'in_progress'])

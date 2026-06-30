@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\WorkingHour;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,9 +25,35 @@ class BotController extends Controller
             'off_hours_message' => 'nullable|string|max:1000',
             'bot_response_delay_minutes' => 'required|integer|min:0|max:1440',
             'bot_off_hours_enabled' => 'nullable',
+            'save_hours' => 'nullable',
         ]);
 
         $company = Auth::user()->company;
+
+        if (isset($data['save_hours'])) {
+            $hours = $request->input('hours', []);
+
+            foreach ($hours as $dayOfWeek => $dayData) {
+                $dayOfWeek = (int) $dayOfWeek;
+                $active = isset($dayData['active']) && $dayData['active'] == '1';
+
+                WorkingHour::where('day_of_week', $dayOfWeek)->delete();
+
+                if ($active) {
+                    WorkingHour::create([
+                        'user_id' => null,
+                        'day_of_week' => $dayOfWeek,
+                        'start_time' => $dayData['start_time'] ?? '09:00',
+                        'end_time' => $dayData['end_time'] ?? '19:00',
+                        'active' => true,
+                    ]);
+                }
+            }
+
+            return redirect()->route('admin.settings.bot')
+                ->with('success', 'Horários de funcionamento atualizados!');
+        }
+
         $company->update([
             'bot_enabled' => isset($data['bot_enabled']),
             'welcome_message' => $data['welcome_message'] ?: null,

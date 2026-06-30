@@ -83,15 +83,17 @@ class WhatsAppService
         $phone = preg_replace('/\D/', '', $phone);
 
         try {
+            Log::info('[WhatsApp] Enviando mensagem:', ['phone' => $phone, 'instance' => $this->instance, 'url' => $this->baseUrl]);
+
             $response = Http::withHeaders($this->headers())
                 ->timeout(30)
                 ->post("{$this->baseUrl}/message/sendText/{$this->instance}", [
                     'number'  => $phone,
-                    'textMessage' => [
-                        'text' => $message,
-                    ],
+                    'text' => $message,
                     'delay'   => 0,
                 ]);
+
+            Log::info('[WhatsApp] Resposta:', ['status' => $response->status(), 'body' => $response->body()]);
 
             return $response->successful();
         } catch (\Exception $e) {

@@ -43,7 +43,8 @@ class ConversationService
     {
         $update = ['state' => $state];
         if ($context !== null) {
-            $update['context'] = $context;
+            $existing = $conversation->context ?? [];
+            $update['context'] = array_merge($existing, $context);
         }
         $conversation->update($update);
     }
