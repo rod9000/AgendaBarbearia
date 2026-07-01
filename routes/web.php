@@ -110,6 +110,7 @@ Route::middleware(['auth', 'trial', 'role:admin'])->prefix('admin')->name('admin
     Route::get('settings/evolution/status', [EvolutionController::class, 'status'])->name('settings.evolution.status');
     Route::post('settings/evolution/disconnect', [EvolutionController::class, 'disconnect'])->name('settings.evolution.disconnect');
     Route::post('settings/evolution/set-webhook', [EvolutionController::class, 'setWebhook'])->name('settings.evolution.set-webhook');
+    Route::get('settings/evolution/qrcode', [EvolutionController::class, 'qrcode'])->name('settings.evolution.qrcode');
 
     Route::get('settings/company', [App\Http\Controllers\Admin\CompanySettingsController::class, 'index'])->name('settings.company');
     Route::post('settings/company', [App\Http\Controllers\Admin\CompanySettingsController::class, 'store'])->name('settings.company.store');

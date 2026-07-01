@@ -20,6 +20,12 @@ class EvolutionController extends Controller
     public function index()
     {
         $company = Auth::user()->company;
+
+        if (!$company) {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Nenhuma empresa configurada. Cadastre uma empresa primeiro.');
+        }
+
         $this->whatsapp->forCompany($company);
 
         $status = $this->whatsapp->getInstanceStatus();
@@ -29,6 +35,12 @@ class EvolutionController extends Controller
 
     public function store(Request $request)
     {
+        $company = Auth::user()->company;
+
+        if (!$company) {
+            return back()->with('error', 'Nenhuma empresa configurada.');
+        }
+
         $data = $request->validate([
             'evolution_api_url' => 'required|url',
             'evolution_api_key' => 'required|string',
@@ -47,20 +59,39 @@ class EvolutionController extends Controller
     public function connect()
     {
         $company = Auth::user()->company;
-        $this->whatsapp->forCompany($company);
 
-        if (!$company->evolutionConfigured()) {
+        if (!$company) {
             return response()->json([
                 'success' => false,
-                'message' => 'Configure a Evolution API primeiro.',
+                'message' => 'Nenhuma empresa configurada.',
             ], 400);
         }
+
+        $this->whatsapp->forCompany($company);
 
         $this->whatsapp->disconnectInstance();
 
         sleep(1);
 
         $this->whatsapp->createInstance();
+
+        // Retorna imediatamente, o frontend vai fazer polling
+        return response()->json([
+            'success' => true,
+            'message' => 'Conectando... aguarde o QR Code.',
+            'polling' => true,
+        ]);
+    }
+
+    public function qrcode()
+    {
+        $company = Auth::user()->company;
+
+        if (!$company) {
+            return response()->json(['success' => false, 'message' => 'Empresa não encontrada.'], 404);
+        }
+
+        $this->whatsapp->forCompany($company);
 
         $result = $this->whatsapp->connectInstance();
 

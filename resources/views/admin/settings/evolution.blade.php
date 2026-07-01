@@ -169,25 +169,60 @@ function connectInstance() {
             return;
         }
 
-        container.classList.remove('hidden');
-        btn.textContent = 'Conectar WhatsApp';
-        btn.disabled = false;
-
-        if (data.qrcode) {
-            var qrSrc = data.qrcode.startsWith('data:') ? data.qrcode : 'data:image/png;base64,' + data.qrcode;
-            qrImage.innerHTML = '<img src="' + qrSrc + '" class="w-56 h-56">';
-        } else if (data.pairingCode) {
-            qrImage.innerHTML = '<div class="text-center"><p class="text-lg font-bold text-brand-700">' + data.pairingCode + '</p><p class="text-xs text-stone-500 mt-1">Código de pareamento</p></div>';
-        }
-
-        qrLoading.classList.remove('hidden');
-        pollConnection();
+        // Inicia polling para buscar o QR Code
+        pollQRCode();
     })
     .catch(function() {
         alert('Erro ao conectar. Verifique se o servidor Evolution está rodando.');
         btn.disabled = false;
         btn.textContent = 'Conectar WhatsApp';
     });
+}
+
+function pollQRCode() {
+    var btn = document.getElementById('connectBtn');
+    var container = document.getElementById('qrcodeContainer');
+    var qrImage = document.getElementById('qrcodeImage');
+    var qrLoading = document.getElementById('qrcodeLoading');
+    var attempts = 0;
+    var maxAttempts = 20;
+
+    qrLoading.textContent = 'Buscando QR Code...';
+    qrLoading.classList.remove('hidden');
+    container.classList.remove('hidden');
+
+    var interval = setInterval(function() {
+        attempts++;
+
+        fetch('{{ route("admin.settings.evolution.qrcode") }}', {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success && data.qrcode) {
+                clearInterval(interval);
+                var qrSrc = data.qrcode.startsWith('data:') ? data.qrcode : 'data:image/png;base64,' + data.qrcode;
+                qrImage.innerHTML = '<img src="' + qrSrc + '" class="w-56 h-56">';
+                qrLoading.textContent = 'Escaneie o QR Code...';
+                btn.disabled = false;
+                btn.textContent = 'Conectar WhatsApp';
+                pollConnection();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                qrLoading.textContent = 'Tempo limite. Tente novamente.';
+                btn.disabled = false;
+                btn.textContent = 'Conectar WhatsApp';
+            }
+        })
+        .catch(function() {
+            if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                qrLoading.textContent = 'Erro ao buscar QR Code.';
+                btn.disabled = false;
+                btn.textContent = 'Conectar WhatsApp';
+            }
+        });
+    }, 3000);
 }
 
 function pollConnection() {

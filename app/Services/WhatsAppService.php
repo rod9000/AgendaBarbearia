@@ -200,7 +200,7 @@ class WhatsAppService
 
         try {
             $response = Http::withHeaders($this->headers())
-                ->timeout(30)
+                ->timeout(60)
                 ->get("{$this->baseUrl}/instance/connect/{$this->instance}");
 
             if (!$response->successful()) {

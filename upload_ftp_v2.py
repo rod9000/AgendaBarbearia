@@ -9,56 +9,85 @@ REMOTE_BASE = "agendabarbearia.infinityfree.me/htdocs"
 
 files = [
     # === MIGRATIONS ===
-    "database/migrations/2026_06_25_000001_create_sales_table.php",
-    "database/migrations/2026_06_25_000002_create_sale_product_table.php",
-    "database/migrations/2026_06_25_000003_create_user_page_permissions_table.php",
+    "database/migrations/2026_06_23_000001_add_whatsapp_to_companies_table.php",
+    "database/migrations/2026_06_25_000004_add_evolution_api_to_companies_table.php",
+    "database/migrations/2026_06_25_000008_add_bot_fields_to_companies_table.php",
+    "database/migrations/2026_06_25_000009_add_webhook_url_to_companies_table.php",
+    "database/migrations/2026_06_26_000001_create_receive_webhooks_table.php",
+    "database/migrations/2026_06_26_000001_create_blocked_numbers_table.php",
+    "database/migrations/2026_06_26_000002_make_customer_fields_nullable.php",
+    "database/migrations/2026_06_26_000002_add_bot_settings_to_companies_table.php",
+    "database/migrations/2026_06_26_000006_create_conversations_table.php",
+    "database/migrations/2026_06_26_000007_create_bot_messages_table.php",
+    "database/migrations/2026_06_26_000008_add_bot_fields_to_companies_table.php",
+    "database/migrations/2026_06_26_000009_add_webhook_url_to_companies_table.php",
+    "database/migrations/2026_06_26_000001_create_receive_webhooks_table.php",
 
     # === MODELS ===
-    "app/Models/Sale.php",
-    "app/Models/UserPagePermission.php",
+    "app/Models/Company.php",
+    "app/Models/Conversation.php",
+    "app/Models/BotMessage.php",
+    "app/Models/BlockedNumber.php",
+    "app/Models/BotMenuItem.php",
+    "app/Models/ReceiveWebhook.php",
+    "app/Models/Customer.php",
     "app/Models/User.php",
+    "app/Models/Service.php",
+    "app/Models/Appointment.php",
+    "app/Models/WorkingHour.php",
+
+    # === SERVICES ===
+    "app/Services/WhatsAppService.php",
+    "app/Services/Bot/BotHandler.php",
+    "app/Services/Bot/ConversationService.php",
 
     # === CONTROLLERS ===
-    "app/Http/Controllers/Admin/SaleController.php",
+    "app/Http/Controllers/Api/WebhookController.php",
+    "app/Http/Controllers/Admin/EvolutionController.php",
+    "app/Http/Controllers/Admin/BotController.php",
+    "app/Http/Controllers/Admin/BotMessagesController.php",
+    "app/Http/Controllers/Admin/BotMenuController.php",
+    "app/Http/Controllers/Admin/BlockedNumberController.php",
+    "app/Http/Controllers/Admin/WebhookLogController.php",
     "app/Http/Controllers/Admin/DashboardController.php",
-    "app/Http/Controllers/Admin/UserController.php",
-
-    # === MIDDLEWARE ===
-    "app/Http/Middleware/CheckPagePermission.php",
-
-    # === KERNEL ===
-    "app/Http/Kernel.php",
-
-    # === COMMANDS ===
-    "app/Console/Commands/SeedUserPermissions.php",
-
-    # === SEEDERS ===
-    "database/seeders/CompanySeeder.php",
 
     # === ROUTES ===
+    "routes/api.php",
     "routes/web.php",
+
+    # === CONFIG ===
+    "config/services.php",
+
+    # === VIEWS ===
+    "resources/views/admin/settings/evolution.blade.php",
+    "resources/views/admin/settings/bot.blade.php",
+    "resources/views/admin/settings/blocked-numbers.blade.php",
+    "resources/views/admin/settings/webhook-logs.blade.php",
+    "resources/views/admin/settings/webhook-detail.blade.php",
+    "resources/views/admin/bot-messages/index.blade.php",
+    "resources/views/admin/bot-messages/show.blade.php",
+    "resources/views/admin/dashboard.blade.php",
+    "resources/views/layouts/navigation.blade.php",
+    "resources/views/admin/customers/index.blade.php",
+    "resources/views/admin/customers/show.blade.php",
+    "resources/views/admin/customers/create.blade.php",
+    "resources/views/admin/customers/edit.blade.php",
+    "resources/views/components/dropdown.blade.php",
+    "resources/views/components/nav-link.blade.php",
+    "resources/views/components/responsive-nav-link.blade.php",
+
+    # === ENV ===
+    ".env",
 
     # === CSS ===
     "public/css/app.css",
-
-    # === VIEWS ===
-    "resources/views/admin/sales/index.blade.php",
-    "resources/views/admin/sales/create.blade.php",
-    "resources/views/admin/sales/show.blade.php",
-    "resources/views/admin/dashboard.blade.php",
-    "resources/views/admin/users/create.blade.php",
-    "resources/views/admin/users/edit.blade.php",
-    "resources/views/layouts/navigation.blade.php",
-    "resources/views/admin/appointments/detail_modal.blade.php",
-    "resources/views/admin/appointments/index.blade.php",
-
-    # === ENV ===
-    ".env.ftp",
 ]
 
 cache_files_to_delete = [
     "/htdocs/bootstrap/cache/packages.php",
     "/htdocs/bootstrap/cache/services.php",
+    "/htdocs/bootstrap/cache/config.php",
+    "/htdocs/storage/framework/views/*.php",
 ]
 
 def full_remote_path(local_file):
@@ -83,7 +112,6 @@ def ensure_remote_dir(ftp, remote_file):
 def delete_remote_file(ftp, remote_file):
     try:
         ftp.delete(remote_file)
-        print(f"Deletado (cache): {remote_file}")
         return True
     except:
         return False
@@ -92,7 +120,7 @@ try:
     ftp = ftplib.FTP(ftp_host, ftp_user, ftp_pass)
     print(f"Conectado ao FTP: {ftp_host}")
 
-    print("\n--- Limpando caches antigos ---")
+    print("\n--- Limpando caches ---")
     for cache_file in cache_files_to_delete:
         delete_remote_file(ftp, cache_file)
 
@@ -109,7 +137,7 @@ try:
             print(f"OK: {local_file}")
             uploaded += 1
         else:
-            print(f"Arquivo nao encontrado: {local_file}")
+            print(f"Nao encontrado: {local_file}")
             skipped += 1
 
     ftp.quit()
