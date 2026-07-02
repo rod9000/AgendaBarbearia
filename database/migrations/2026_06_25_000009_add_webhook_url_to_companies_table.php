@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->string('evolution_webhook_url')->nullable()->after('off_hours_message');
+            if (!Schema::hasColumn('companies', 'evolution_webhook_url')) {
+                $table->string('evolution_webhook_url')->nullable()->after('off_hours_message');
+            }
         });
     }
 

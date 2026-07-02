@@ -1,0 +1,61 @@
+##
+# Configuração do Nginx - Evolution API & Agenda Barbearia
+##
+
+# ----------------------------------------------------
+# 1º SUBDOMÍNIO: evolutionapi (Porta 8080)
+# ----------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    
+    # Ajustado para bater exatamente com o seu DNS
+    server_name evolutionapi.vps-kinghost.net www.evolutionapi.vps-kinghost.net;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        
+        # Cabeçalhos para WebSockets e IPs reais
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Evita timeouts em requisições longas
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+    }
+}
+
+# ----------------------------------------------------
+# 2º SUBDOMÍNIO: agendabarbearia (Porta 8001)
+# ----------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    
+    # Ajustado para bater exatamente com o seu DNS
+    server_name agendabarbearia.vps-kinghost.net www.agendabarbearia.vps-kinghost.net;
+
+    location / {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_http_version 1.1;
+        
+        # Cabeçalhos mantidos para garantir compatibilidade e WebSockets
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Evita timeouts em requisições longas
+        proxy_connect_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+    }
+}

@@ -75,24 +75,6 @@ class EvolutionController extends Controller
 
         $this->whatsapp->createInstance();
 
-        // Retorna imediatamente, o frontend vai fazer polling
-        return response()->json([
-            'success' => true,
-            'message' => 'Conectando... aguarde o QR Code.',
-            'polling' => true,
-        ]);
-    }
-
-    public function qrcode()
-    {
-        $company = Auth::user()->company;
-
-        if (!$company) {
-            return response()->json(['success' => false, 'message' => 'Empresa não encontrada.'], 404);
-        }
-
-        $this->whatsapp->forCompany($company);
-
         $result = $this->whatsapp->connectInstance();
 
         return response()->json($result);
@@ -101,6 +83,11 @@ class EvolutionController extends Controller
     public function status()
     {
         $company = Auth::user()->company;
+
+        if (!$company) {
+            return response()->json(['connected' => false, 'message' => 'Empresa não encontrada']);
+        }
+
         $this->whatsapp->forCompany($company);
 
         $result = $this->whatsapp->getInstanceStatus();

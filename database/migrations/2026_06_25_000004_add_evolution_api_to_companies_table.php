@@ -9,9 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->string('evolution_api_url')->nullable()->after('whatsapp');
-            $table->string('evolution_api_key')->nullable()->after('evolution_api_url');
-            $table->string('evolution_instance_name')->nullable()->after('evolution_api_key');
+            if (!Schema::hasColumn('companies', 'evolution_api_url')) {
+                $table->string('evolution_api_url')->nullable()->after('whatsapp');
+            }
+            if (!Schema::hasColumn('companies', 'evolution_api_key')) {
+                $table->string('evolution_api_key')->nullable()->after('evolution_api_url');
+            }
+            if (!Schema::hasColumn('companies', 'evolution_instance_name')) {
+                $table->string('evolution_instance_name')->nullable()->after('evolution_api_key');
+            }
         });
     }
 

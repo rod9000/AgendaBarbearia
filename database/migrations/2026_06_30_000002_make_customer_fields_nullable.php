@@ -8,17 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            $table->string('cpf', 14)->nullable()->change();
-            $table->date('birth_date')->nullable()->change();
-        });
+        DB::statement('ALTER TABLE customers MODIFY cpf VARCHAR(14) NULL');
+        DB::statement('ALTER TABLE customers MODIFY birth_date DATE NULL');
     }
 
     public function down(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            $table->string('cpf', 14)->nullable(false)->change();
-            $table->date('birth_date')->nullable(false)->change();
-        });
+        DB::statement('ALTER TABLE customers MODIFY cpf VARCHAR(14) NOT NULL');
+        DB::statement('ALTER TABLE customers MODIFY birth_date DATE NOT NULL');
     }
 };

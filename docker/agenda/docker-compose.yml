@@ -1,0 +1,44 @@
+services:
+  # === Laravel App ===
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: agenda-barbearia
+    restart: always
+    ports:
+      - "8001:80"
+    depends_on:
+      - db
+    networks:
+      - agenda-net
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-agenda_barbearia}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+
+  # === MySQL ===
+  db:
+    image: mysql:8.0
+    container_name: agenda-barbearia_db
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-agenda_barbearia}
+      MYSQL_USER: ${DB_USERNAME:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - agenda_mysql:/var/lib/mysql
+    networks:
+      - agenda-net
+
+networks:
+  agenda-net:
+    driver: bridge
+
+volumes:
+  agenda_mysql:

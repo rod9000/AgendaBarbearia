@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->string('whatsapp_type')->default('normal')->after('evolution_instance_name');
+            if (!Schema::hasColumn('companies', 'whatsapp_type')) {
+                $table->string('whatsapp_type')->default('normal')->after('evolution_instance_name');
+            }
         });
     }
 

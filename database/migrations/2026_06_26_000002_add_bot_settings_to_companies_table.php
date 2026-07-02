@@ -9,8 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->integer('bot_response_delay_minutes')->default(60)->after('off_hours_message');
-            $table->boolean('bot_off_hours_enabled')->default(true)->after('bot_response_delay_minutes');
+            if (!Schema::hasColumn('companies', 'bot_response_delay_minutes')) {
+                $table->integer('bot_response_delay_minutes')->default(60)->after('off_hours_message');
+            }
+            if (!Schema::hasColumn('companies', 'bot_off_hours_enabled')) {
+                $table->boolean('bot_off_hours_enabled')->default(true)->after('bot_response_delay_minutes');
+            }
         });
     }
 

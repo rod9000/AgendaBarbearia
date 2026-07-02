@@ -14,14 +14,30 @@ return new class extends Migration
     public function up()
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->string('razao_social')->nullable()->after('name');
-            $table->string('endereco')->nullable()->after('cnpj');
-            $table->string('numero')->nullable()->after('endereco');
-            $table->string('bairro')->nullable()->after('numero');
-            $table->string('cidade')->nullable()->after('bairro');
-            $table->string('cep')->nullable()->after('cidade');
-            $table->char('uf', 2)->nullable()->after('cep');
-            $table->string('complemento')->nullable()->after('uf');
+            if (!Schema::hasColumn('companies', 'razao_social')) {
+                $table->string('razao_social')->nullable()->after('name');
+            }
+            if (!Schema::hasColumn('companies', 'endereco')) {
+                $table->string('endereco')->nullable()->after('cnpj');
+            }
+            if (!Schema::hasColumn('companies', 'numero')) {
+                $table->string('numero')->nullable()->after('endereco');
+            }
+            if (!Schema::hasColumn('companies', 'bairro')) {
+                $table->string('bairro')->nullable()->after('numero');
+            }
+            if (!Schema::hasColumn('companies', 'cidade')) {
+                $table->string('cidade')->nullable()->after('bairro');
+            }
+            if (!Schema::hasColumn('companies', 'cep')) {
+                $table->string('cep')->nullable()->after('cidade');
+            }
+            if (!Schema::hasColumn('companies', 'uf')) {
+                $table->char('uf', 2)->nullable()->after('cep');
+            }
+            if (!Schema::hasColumn('companies', 'complemento')) {
+                $table->string('complemento')->nullable()->after('uf');
+            }
         });
     }
 
