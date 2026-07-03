@@ -195,16 +195,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 var time = arg.timeText || '';
                 var customer = props.customer || arg.event.title || '';
                 var service = props.service || '';
+                var bgColor = arg.event.backgroundColor || '#3b82f6';
+                var textColor = '#fff';
                 var lines = [];
                 if (time || customer) {
-                    lines.push('<div style="font-weight:600;font-size:0.8em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+                    lines.push('<div style="font-weight:600;font-size:0.8em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:' + textColor + ';">'
                         + (time ? '<span style="opacity:0.8;">' + time + '</span> ' : '')
                         + customer + '</div>');
                 }
                 if (service) {
-                    lines.push('<div style="font-size:0.72em;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + service + '</div>');
+                    lines.push('<div style="font-size:0.72em;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:' + textColor + ';">' + service + '</div>');
                 }
-                return { html: '<div style="padding:2px 4px;line-height:1.3;overflow:hidden;">' + lines.join('') + '</div>' };
+                return { html: '<div style="padding:2px 4px;line-height:1.3;overflow:hidden;background-color:' + bgColor + ';border-radius:4px;height:100%;">' + lines.join('') + '</div>' };
             } catch(e) {
                 return { html: '<div style="padding:2px 4px;font-size:0.8em;">' + (arg.event.title || '') + '</div>' };
             }
