@@ -20,13 +20,13 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Enable Apache modules
 RUN a2enmod rewrite headers
 
-# Fix MPM conflict - comment out event module directly
+# Fix MPM conflict
 RUN echo "# disabled" > /etc/apache2/mods-enabled/mpm_event.load
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy all application files first
+# Copy all application files
 COPY . /var/www/html
 
 # Install Composer dependencies
@@ -35,7 +35,11 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader -
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Copy Apache config
+# Apache config for Railway PORT variable
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
-EXPOSE 80
+# Startup script that configures port at runtime
+RUN printf '#!/bin/sh\nsed -i "s/Listen .*/Listen ${PORT:-80}/" /etc/apache2/ports.conf\nsed -i "s/<VirtualHost \\*:[0-9]*>/<VirtualHost *:${PORT:-80}>/" /etc/apache2/sites-available/000-default.conf\nexec apache2-foreground\n' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
+
+CMD ["/usr/local/bin/start.sh"]
+EXPOSE 8080
