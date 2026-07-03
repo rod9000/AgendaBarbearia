@@ -127,6 +127,8 @@
     .dark .fc-day-today { background: rgba(72,101,133,0.1) !important; }
     .dark .fc-timegrid-now-indicator-line { border-color: #ef4444; }
     .dark .fc-timegrid-now-indicator-arrow { border-color: #ef4444; }
+    .fc-event { cursor: pointer; border-radius: 4px; overflow: hidden; }
+    .fc-event .fc-event-inner { color: #fff; }
 </style>
 @endpush
 
@@ -188,6 +190,20 @@ document.addEventListener('DOMContentLoaded', function() {
         allDaySlot: false,
         editable: true,
         selectable: true,
+        eventContent: function(arg) {
+            var props = arg.event.extendedProps;
+            var time = arg.timeText || '';
+            var customer = props.customer || arg.event.title;
+            var service = props.service || '';
+            return {
+                html: '<div class="fc-event-inner" style="padding:2px 4px;line-height:1.3;overflow:hidden;">'
+                    + '<div style="font-weight:600;font-size:0.8em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+                    + '<span style="opacity:0.8;">' + time + '</span> ' + customer
+                    + '</div>'
+                    + (service ? '<div style="font-size:0.72em;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + service + '</div>' : '')
+                    + '</div>'
+            };
+        },
         events: {
             url: '/admin/appointments/calendar-data',
             extraParams: function() {
