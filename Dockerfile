@@ -20,12 +20,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Fix MPM conflict - only use prefork
-RUN sed -i 's/LoadModule mpm_event_module/LoadModule mpm_prefork_module/' /etc/apache2/mods-available/mpm.conf \
-    && rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
-    && rm -f /etc/apache2/mods-available/mpm_event.load /etc/apache2/mods-available/mpm_event.conf \
-    && ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load \
-    && ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf
+# Fix MPM conflict - comment out event module directly
+RUN echo "# disabled" > /etc/apache2/mods-enabled/mpm_event.load
 
 # Set working directory
 WORKDIR /var/www/html
