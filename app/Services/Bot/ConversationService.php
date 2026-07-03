@@ -16,14 +16,17 @@ class ConversationService
 
         $customer = Customer::where('phone', $phone)->first();
 
-        if ($customer && $pushName && $customer->name !== $pushName) {
-            $customer->update(['name' => $pushName]);
+        // Sempre atualizar nome se pushName e valido e diferente do atual
+        $resolvedName = $this->resolveName($pushName, $customer);
+
+        if ($customer && $resolvedName && $customer->name !== $resolvedName) {
+            $customer->update(['name' => $resolvedName]);
         }
 
         if (!$conversation) {
             if (!$customer) {
                 $customer = Customer::create([
-                    'name' => $pushName ?: 'Cliente WhatsApp',
+                    'name' => $resolvedName ?: 'Cliente WhatsApp',
                     'phone' => $phone,
                 ]);
             }
@@ -43,7 +46,7 @@ class ConversationService
                 $conversation->update(['customer_id' => $customer->id]);
             } elseif (!$conversation->customer_id && !$customer) {
                 $customer = Customer::create([
-                    'name' => $pushName ?: 'Cliente WhatsApp',
+                    'name' => $resolvedName ?: 'Cliente WhatsApp',
                     'phone' => $phone,
                 ]);
                 $conversation->update(['customer_id' => $customer->id]);
@@ -51,6 +54,23 @@ class ConversationService
         }
 
         return $conversation;
+    }
+
+    private function resolveName(?string $pushName, ?Customer $customer): ?string
+    {
+        if ($pushName && trim($pushName) !== '' && trim($pushName) !== 'Cliente WhatsApp') {
+            return trim($pushName);
+        }
+
+        if ($customer && $customer->name && $customer->name !== 'Cliente WhatsApp') {
+            return $customer->name;
+        }
+
+        if ($pushName && trim($pushName) !== '') {
+            return trim($pushName);
+        }
+
+        return null;
     }
 
     public function updateState(Conversation $conversation, string $state, ?array $context = null): void

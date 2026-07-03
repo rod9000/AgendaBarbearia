@@ -43,7 +43,10 @@ class WebhookController extends Controller
 
         $phone = $this->extractPhone($data);
         $message = $this->extractMessage($data);
-        $pushName = $data['pushName'] ?? null;
+        $pushName = $data['pushName']
+            ?? $data['data']['pushName']
+            ?? $data['message']['pushName']
+            ?? null;
 
         Log::info('[Webhook Evolution] Mensagem processada:', ['phone' => $phone, 'message' => $message, 'pushName' => $pushName]);
 
