@@ -17,8 +17,10 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Enable Apache mod_rewrite and disable conflicting MPM
-RUN a2enmod rewrite && a2dismod mpm_event && a2enmod mpm_prefork
+# Enable Apache mod_rewrite and fix MPM conflict
+RUN a2enmod rewrite \
+    && rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+    && a2enmod mpm_prefork
 
 # Set working directory
 WORKDIR /var/www/html
