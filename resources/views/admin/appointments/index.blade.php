@@ -128,7 +128,6 @@
     .dark .fc-timegrid-now-indicator-line { border-color: #ef4444; }
     .dark .fc-timegrid-now-indicator-arrow { border-color: #ef4444; }
     .fc-event { cursor: pointer; border-radius: 4px; overflow: hidden; }
-    .fc-event .fc-event-inner { color: #fff; }
 </style>
 @endpush
 
@@ -191,18 +190,24 @@ document.addEventListener('DOMContentLoaded', function() {
         editable: true,
         selectable: true,
         eventContent: function(arg) {
-            var props = arg.event.extendedProps;
-            var time = arg.timeText || '';
-            var customer = props.customer || arg.event.title;
-            var service = props.service || '';
-            return {
-                html: '<div class="fc-event-inner" style="padding:2px 4px;line-height:1.3;overflow:hidden;">'
-                    + '<div style="font-weight:600;font-size:0.8em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-                    + '<span style="opacity:0.8;">' + time + '</span> ' + customer
-                    + '</div>'
-                    + (service ? '<div style="font-size:0.72em;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + service + '</div>' : '')
-                    + '</div>'
-            };
+            try {
+                var props = arg.event.extendedProps || {};
+                var time = arg.timeText || '';
+                var customer = props.customer || arg.event.title || '';
+                var service = props.service || '';
+                var lines = [];
+                if (time || customer) {
+                    lines.push('<div style="font-weight:600;font-size:0.8em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+                        + (time ? '<span style="opacity:0.8;">' + time + '</span> ' : '')
+                        + customer + '</div>');
+                }
+                if (service) {
+                    lines.push('<div style="font-size:0.72em;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + service + '</div>');
+                }
+                return { html: '<div style="padding:2px 4px;line-height:1.3;overflow:hidden;">' + lines.join('') + '</div>' };
+            } catch(e) {
+                return { html: '<div style="padding:2px 4px;font-size:0.8em;">' + (arg.event.title || '') + '</div>' };
+            }
         },
         events: {
             url: '/admin/appointments/calendar-data',
