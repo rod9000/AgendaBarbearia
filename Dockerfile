@@ -1,16 +1,21 @@
 FROM php:8.0-apache
 
-# Install PHP extensions
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
     libzip-dev \
     libonig-dev \
+    unzip \
+    git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
@@ -18,7 +23,7 @@ RUN a2enmod rewrite
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy composer files and install
+# Copy composer files and install dependencies
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
