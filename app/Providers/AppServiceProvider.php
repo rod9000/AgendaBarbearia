@@ -25,6 +25,7 @@ use App\Observers\ServiceObserver;
 use App\Observers\UserObserver;
 use App\Observers\WorkingHourObserver;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +37,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
+
         Schema::defaultStringLength(191);
         Customer::observe(CustomerObserver::class);
         Appointment::observe(AppointmentObserver::class);
