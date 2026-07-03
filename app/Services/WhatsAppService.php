@@ -244,19 +244,42 @@ class WhatsAppService
             return ['success' => false, 'message' => 'Evolution API não configurada'];
         }
 
-        try {
-            $response = Http::withHeaders($this->headers())
-                ->timeout(10)
-                ->post("{$this->baseUrl}/instance/logout/{$this->instance}");
+        $endpoints = [
+            ['method' => 'POST', 'url' => "/instance/logout/{$this->instance}"],
+            ['method' => 'DELETE', 'url' => "/instance/logout/{$this->instance}"],
+            ['method' => 'POST', 'url' => "/instance/close/{$this->instance}"],
+        ];
 
-            if ($response->successful()) {
-                return ['success' => true, 'message' => 'Desconectado com sucesso'];
+        foreach ($endpoints as $endpoint) {
+            try {
+                $http = Http::withHeaders($this->headers())->timeout(10);
+
+                $response = match ($endpoint['method']) {
+                    'POST' => $http->post("{$this->baseUrl}{$endpoint['url']}"),
+                    'DELETE' => $http->delete("{$this->baseUrl}{$endpoint['url']}"),
+                };
+
+                if ($response->successful()) {
+                    \Log::info("[Evolution] Desconectado via {$endpoint['method']} {$endpoint['url']}");
+                    return ['success' => true, 'message' => 'Desconectado com sucesso'];
+                }
+
+                if ($response->status() === 500) {
+                    \Log::warning("[Evolution] {$endpoint['method']} {$endpoint['url']} retornou 500, tentando próximo...");
+                    continue;
+                }
+
+                return ['success' => true, 'message' => 'Instância desconectada'];
+            } catch (\Exception $e) {
+                \Log::warning("[Evolution] {$endpoint['method']} {$endpoint['url']} falhou: " . $e->getMessage());
+                continue;
             }
-
-            return ['success' => true, 'message' => 'Instância desconectada'];
-        } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Erro ao desconectar: ' . $e->getMessage()];
         }
+
+        return [
+            'success' => false,
+            'message' => 'Não foi possível desconectar via API. Reinicie o container da Evolution API manualmente.',
+        ];
     }
 
     public function createInstance(): array
