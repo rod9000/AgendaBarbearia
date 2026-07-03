@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Enable Apache modules
+RUN a2enmod rewrite headers
 
 # Fix MPM conflict - comment out event module directly
 RUN echo "# disabled" > /etc/apache2/mods-enabled/mpm_event.load
