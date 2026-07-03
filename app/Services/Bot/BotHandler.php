@@ -517,13 +517,17 @@ class BotHandler
 
         $this->whatsapp->sendConfirmation($appointment);
 
+        $reagendarLink = url('/reagendar/' . $appointment->confirmation_token);
+        $cancelarLink = url('/cancelar/' . $appointment->confirmation_token);
+
         $msg = "*Agendamento confirmado!*\n\n"
             . "Serviço: {$service->name}\n"
             . "Profissional: {$user->name}\n"
             . "Data: {$start->format('d/m/Y')}\n"
             . "Horário: {$start->format('H:i')}\n"
             . "Valor: R$ " . number_format($service->price, 2, ',', '.') . "\n\n"
-            . "Você receberá uma confirmação em breve.\n\n"
+            . "🔗 Reagendar: {$reagendarLink}\n"
+            . "❌ Cancelar: {$cancelarLink}\n\n"
             . "0️⃣ Voltar ao menu principal.";
 
         $this->send($phone, $msg);
@@ -624,15 +628,19 @@ class BotHandler
         foreach ($appointments as $index => $appointment) {
             $serviceNames = $appointment->services->pluck('name')->implode(', ');
             $totalPrice = $appointment->services->sum('pivot.price');
+            $reagendarLink = url('/reagendar/' . $appointment->confirmation_token);
+            $cancelarLink = url('/cancelar/' . $appointment->confirmation_token);
 
             $msg .= $appointment->start->format('d/m/Y H:i') . "\n";
             $msg .= "   Serviço: {$serviceNames}\n";
             $msg .= "   Profissional: {$appointment->user->name}\n";
             $msg .= "   Valor: R$ " . number_format($totalPrice, 2, ',', '.') . "\n";
-            $msg .= "   Status: " . $this->translateStatus($appointment->status) . "\n\n";
+            $msg .= "   Status: " . $this->translateStatus($appointment->status) . "\n";
+            $msg .= "   🔗 Reagendar: {$reagendarLink}\n";
+            $msg .= "   ❌ Cancelar: {$cancelarLink}\n\n";
         }
 
-        $msg .= "1️⃣ Agendar outro.\n3️⃣ Alterar horário.\n5️⃣ Cancelar agendamento.\n0️⃣ Voltar ao menu.";
+        $msg .= "1️⃣ Agendar outro.\n0️⃣ Voltar ao menu.";
 
         $this->conversationService->updateState($conversation, 'consulting_appointments', [
             'appointment_ids' => $appointments->pluck('id')->toArray(),
