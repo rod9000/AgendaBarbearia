@@ -71,8 +71,8 @@ services:
       STORE_MESSAGES: "true"
 
       WEBHOOK_ENABLED: "true"
-      WEBHOOK_URL: ${WEBHOOK_URL:-http://host.docker.internal:8000/api/webhook/evolution}
-      WEBHOOK_BY_EVENTS: "true"
+      WEBHOOK_URL: ${WEBHOOK_URL:-https://agendabarbearia.up.railway.app/api/webhook/evolution}
+      WEBHOOK_BY_EVENTS: "false"
       WEBHOOK_EVENTS: MESSAGES_UPSERT
       WEBHOOK_BASE64: "false"
 
