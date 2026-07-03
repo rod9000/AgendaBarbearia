@@ -46,6 +46,7 @@ class Handler extends ExceptionHandler
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        $request->session()->flash('error', 'Sessão expirada. Faça login novamente.');
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Sessão expirada. Faça login novamente.'], 401);

@@ -9,6 +9,13 @@
         <!-- Session Status -->
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
+        <!-- Error Flash Message -->
+        @if (session('error'))
+            <div class="mb-4 px-4 py-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <!-- Validation Errors -->
         <x-auth-validation-errors class="mb-4" :errors="$errors" />
 
