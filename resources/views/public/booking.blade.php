@@ -120,7 +120,7 @@
                         {{-- STEP 1: Buscar ou Cadastrar Cliente --}}
                         <div id="step1" class="step-content step-enter">
                             <h2 class="text-lg font-semibold text-stone-800 dark:text-stone-100 mb-1">Identifique-se</h2>
-                            <p class="text-sm text-stone-400 dark:text-stone-500 mb-5">Informe seu nome e CPF para continuar</p>
+                            <p class="text-sm text-stone-400 dark:text-stone-500 mb-5">Informe seu nome e telefone para continuar</p>
 
                             <div id="step1Error" class="hidden mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3">
                                 <p id="step1ErrorText" class="text-sm text-red-600 dark:text-red-400"></p>
@@ -131,12 +131,8 @@
                                     <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Nome Completo</label>
                                     <input type="text" id="step1Name" class="w-full rounded-xl border-2 border-stone-200 dark:border-stone-600 bg-white/80 dark:bg-stone-700 shadow-sm focus:border-brand-400 focus:ring focus:ring-brand-200/30 p-3 text-sm transition-all dark:text-stone-200" placeholder="Digite seu nome">
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">CPF</label>
-                                    <input type="text" id="step1Cpf" class="w-full rounded-xl border-2 border-stone-200 dark:border-stone-600 bg-white/80 dark:bg-stone-700 shadow-sm focus:border-brand-400 focus:ring focus:ring-brand-200/30 p-3 text-sm transition-all dark:text-stone-200" placeholder="000.000.000-00">
-                                </div>
                                 <div id="step1PhoneGroup">
-                                    <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Telefone <span class="text-xs text-stone-400">(opcional)</span></label>
+                                    <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Telefone</label>
                                     <input type="text" id="step1Phone" class="w-full rounded-xl border-2 border-stone-200 dark:border-stone-600 bg-white/80 dark:bg-stone-700 shadow-sm focus:border-brand-400 focus:ring focus:ring-brand-200/30 p-3 text-sm transition-all dark:text-stone-200" placeholder="(11) 99999-8888">
                                 </div>
                             </div>
@@ -332,7 +328,7 @@
     function nextStep(step) { updateSteps(step); }
     function prevStep(step) { updateSteps(step); }
 
-    // --- Step 1: Buscar cliente por Nome + CPF ---
+    // --- Step 1: Buscar cliente por Nome + Telefone ---
     function showErrorMsg(id, msg) {
         var el = document.getElementById(id);
         if (el) {
@@ -343,7 +339,6 @@
 
     function buscarCliente() {
         var name = document.getElementById('step1Name').value.trim();
-        var cpf = document.getElementById('step1Cpf').value.trim();
         var phone = document.getElementById('step1Phone').value.trim();
         var btn = document.getElementById('step1Btn');
         var spinner = document.getElementById('step1Spinner');
@@ -353,7 +348,9 @@
         document.getElementById('step1Error').classList.add('hidden');
 
         if (!name || name.length < 3) { showErrorMsg('step1Error', 'Informe o nome completo'); return; }
-        if (!cpf || cpf.length < 3) { showErrorMsg('step1Error', 'Informe o CPF'); return; }
+        if (!phone || phone.replace(/\D/g, '').length < 8) { showErrorMsg('step1Error', 'Informe o telefone'); return; }
+
+        var phoneClean = phone.replace(/\D/g, '');
 
         btn.disabled = true;
         btn.textContent = 'Buscando...';
@@ -361,7 +358,7 @@
         welcome.classList.add('hidden');
         nextBtn.classList.add('hidden');
 
-        fetch('/agendar/buscar-cliente?q=' + encodeURIComponent(cpf.replace(/\D/g, '')))
+        fetch('/agendar/buscar-cliente?q=' + encodeURIComponent(phoneClean))
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 spinner.classList.add('hidden');
@@ -369,9 +366,8 @@
                 var found = null;
                 if (data.customers && data.customers.length > 0) {
                     for (var i = 0; i < data.customers.length; i++) {
-                        var cpfClean = cpf.replace(/\D/g, '');
-                        var cpfDb = (data.customers[i].cpf || '').replace(/\D/g, '');
-                        if (cpfClean === cpfDb) {
+                        var phoneDb = (data.customers[i].phone || '').replace(/\D/g, '');
+                        if (phoneClean === phoneDb) {
                             found = data.customers[i];
                             break;
                         }
@@ -379,17 +375,17 @@
                 }
 
                 if (found) {
-                    showWelcome(found, name, cpf, btn);
+                    showWelcome(found, name, phone, btn);
                 } else {
                     fetch('/agendar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value },
-                        body: 'action=register_customer&name=' + encodeURIComponent(name) + '&cpf=' + encodeURIComponent(cpf) + '&phone=' + encodeURIComponent(phone) + '&email='
+                        body: 'action=register_customer&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + '&email='
                     })
                     .then(function(r) { return r.json(); })
                     .then(function(data2) {
                         if (data2.success) {
-                            showWelcome(data2.customer, name, cpf, btn);
+                            showWelcome(data2.customer, name, phone, btn);
                         } else {
                             showErrorMsg('step1Error', data2.message || 'Erro ao cadastrar. Tente novamente.');
                             btn.disabled = false;
@@ -411,11 +407,11 @@
             });
     }
 
-    function showWelcome(customer, name, cpf, btn) {
+    function showWelcome(customer, name, phone, btn) {
         selectedCustomerId = customer.id;
         document.getElementById('customer_id').value = customer.id;
         document.getElementById('welcomeName').textContent = customer.name;
-        document.getElementById('welcomeCpf').textContent = 'CPF: ' + (customer.cpf || cpf);
+        document.getElementById('welcomeCpf').textContent = 'Telefone: ' + (customer.phone || phone);
         document.getElementById('step1Welcome').classList.remove('hidden');
         var nextBtn = document.getElementById('step1Next');
         nextBtn.classList.remove('hidden');
@@ -766,15 +762,6 @@
             clearState();
         });
 
-        // CPF mask on Step 1
-        document.getElementById('step1Cpf').addEventListener('input', function() {
-            var v = this.value.replace(/\D/g, '');
-            if (v.length <= 3) this.value = v;
-            else if (v.length <= 6) this.value = v.slice(0,3) + '.' + v.slice(3);
-            else if (v.length <= 9) this.value = v.slice(0,3) + '.' + v.slice(3,6) + '.' + v.slice(6);
-            else this.value = v.slice(0,3) + '.' + v.slice(3,6) + '.' + v.slice(6,9) + '-' + v.slice(9,11);
-        });
-
         // Phone mask on Step 1
         document.getElementById('step1Phone').addEventListener('input', function() {
             var v = this.value.replace(/\D/g, '');
@@ -784,7 +771,7 @@
         });
 
         // Enter key on Step 1 triggers search
-        document.getElementById('step1Cpf').addEventListener('keydown', function(e) {
+        document.getElementById('step1Phone').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') { e.preventDefault(); buscarCliente(); }
         });
         document.getElementById('step1Name').addEventListener('keydown', function(e) {
