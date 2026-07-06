@@ -316,7 +316,7 @@ class PublicController extends Controller
                     $newApp = Appointment::create([
                         'customer_id' => $appointment->customer_id,
                         'user_id'     => $userId,
-                        'service_id'  => $services->count() === 1 ? $services->first()->id : null,
+                    'service_id'  => $services->first()->id,
                         'start'       => $start,
                         'end'         => $end,
                         'status'      => 'scheduled',
