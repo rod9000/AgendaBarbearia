@@ -158,6 +158,9 @@
                             <x-dropdown-link :href="route('admin.reports.index')">
                                 Relatórios
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.reports.commissions')">
+                                Fechamento Comissões
+                            </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.backup.index')">
                                 Backup
                             </x-dropdown-link>

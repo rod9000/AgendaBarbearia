@@ -94,6 +94,9 @@ Route::middleware(['auth', 'trial', 'role:admin'])->prefix('admin')->name('admin
 
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export-csv', [ReportController::class, 'exportCsv'])->name('reports.export-csv');
+    Route::get('reports/commissions', [ReportController::class, 'commissionReport'])->name('reports.commissions');
+    Route::get('reports/commissions/csv', [ReportController::class, 'exportCommissionCsv'])->name('reports.commissions.csv');
+    Route::get('reports/financial/csv', [ReportController::class, 'exportFinancialCsv'])->name('reports.financial.csv');
 
     Route::get('backup', [BackupController::class, 'index'])->name('backup.index');
     Route::post('backup/run', [BackupController::class, 'run'])->name('backup.run');

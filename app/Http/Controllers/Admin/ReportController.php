@@ -145,4 +145,115 @@ class ReportController extends Controller
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
+
+    public function commissionReport(Request $request)
+    {
+        $month = (int) $request->get('month', now()->month);
+        $year = (int) $request->get('year', now()->year);
+        $userId = $request->get('user_id');
+
+        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $query = Commission::with('user')
+            ->whereBetween('created_at', [$start, $end]);
+
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        $summary = $query->clone()
+            ->selectRaw('
+                user_id,
+                COUNT(*) as total_appointments,
+                SUM(value) as total_commission,
+                SUM(CASE WHEN paid = 1 THEN value ELSE 0 END) as paid,
+                SUM(CASE WHEN paid = 0 THEN value ELSE 0 END) as pending
+            ')
+            ->groupBy('user_id')
+            ->get()
+            ->map(function ($row) {
+                $row->user = User::find($row->user_id);
+                return $row;
+            });
+
+        $grandTotal = $summary->sum('total_commission');
+        $grandPaid = $summary->sum('paid');
+        $grandPending = $summary->sum('pending');
+
+        $users = User::where('active', true)->orderBy('name')->get();
+        $months = collect(range(1, 12))->mapWithKeys(fn($m) => [$m => Carbon::create()->month($m)->locale('pt-BR')->isoFormat('MMMM')]);
+        $years = range(now()->year - 2, now()->year);
+
+        return view('admin.reports.commissions', compact(
+            'summary', 'grandTotal', 'grandPaid', 'grandPending',
+            'users', 'months', 'years', 'month', 'year', 'userId'
+        ));
+    }
+
+    public function exportCommissionCsv(Request $request)
+    {
+        $month = (int) $request->get('month', now()->month);
+        $year = (int) $request->get('year', now()->year);
+
+        $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        $commissions = Commission::with(['user', 'appointment.customer'])
+            ->whereBetween('created_at', [$start, $end])
+            ->latest()
+            ->get();
+
+        $csv = "Barbeiro,Cliente,Data,Valor,Pago\n";
+        foreach ($commissions as $c) {
+            $barber = $c->user->name ?? 'N/A';
+            $customer = $c->appointment->customer->name ?? 'N/A';
+            $date = $c->created_at->format('d/m/Y');
+            $value = number_format($c->value, 2, ',', '.');
+            $paid = $c->paid ? 'Sim' : 'Não';
+            $csv .= "\"{$barber}\",\"{$customer}\",\"{$date}\",\"{$value}\",\"{$paid}\"\n";
+        }
+
+        $filename = "comissao-{$year}-{$month}.csv";
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    public function exportFinancialCsv(Request $request)
+    {
+        $period = $request->get('period', 'month');
+
+        $dateRange = match ($period) {
+            'today' => [Carbon::today(), Carbon::today()->endOfDay()],
+            'week' => [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()],
+            'month' => [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()],
+            'year' => [Carbon::now()->startOfYear(), Carbon::now()->endOfYear()],
+            default => [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()],
+        };
+
+        $payments = Payment::with(['appointment.customer', 'appointment.services'])
+            ->whereBetween('paid_at', $dateRange)
+            ->latest('paid_at')
+            ->get();
+
+        $csv = "Data,Cliente,Serviços,Valor,Método,Status\n";
+        foreach ($payments as $p) {
+            $date = $p->paid_at->format('d/m/Y H:i');
+            $customer = $p->appointment->customer->name ?? 'N/A';
+            $services = $p->appointment->services->pluck('name')->implode(' + ');
+            $amount = number_format($p->amount, 2, ',', '.');
+            $method = match($p->method) { 'dinheiro' => 'Dinheiro', 'cartao' => 'Cartão', default => 'PIX' };
+            $csv .= "\"{$date}\",\"{$customer}\",\"{$services}\",\"{$amount}\",\"{$method}\",\"Pago\"\n";
+        }
+
+        $filename = "financeiro-{$period}-" . now()->format('Y-m-d') . ".csv";
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
 }

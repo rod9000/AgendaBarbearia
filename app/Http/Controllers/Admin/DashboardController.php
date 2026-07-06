@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -38,24 +39,30 @@ class DashboardController extends Controller
         $cancelled = (clone $baseAppointments)->whereIn('status', ['cancelled', 'no_show']);
         $pending = (clone $baseAppointments)->whereIn('status', ['scheduled', 'confirmed']);
 
-        // --- Revenue (via pivot) ---
-        $revenue = (float) (clone $completed)
-            ->join('appointment_service', 'appointments.id', '=', 'appointment_service.appointment_id')
-            ->sum('appointment_service.price');
+        // --- Revenue (via pivot) — cached 5min ---
+        $revenue = (float) Cache::remember("rev_{$period}_{$periodStart}", 300, fn() =>
+            (clone $completed)
+                ->join('appointment_service', 'appointments.id', '=', 'appointment_service.appointment_id')
+                ->sum('appointment_service.price')
+        );
 
-        $salesTotal = (float) Sale::whereBetween('created_at', [$periodStart, $periodEnd])->sum('total');
-        $salesCount = Sale::whereBetween('created_at', [$periodStart, $periodEnd])->count();
+        $salesTotal = (float) Cache::remember("sales_{$period}_{$periodStart}", 300, fn() =>
+            Sale::whereBetween('created_at', [$periodStart, $periodEnd])->sum('total')
+        );
+        $salesCount = Cache::remember("sales_count_{$period}_{$periodStart}", 300, fn() =>
+            Sale::whereBetween('created_at', [$periodStart, $periodEnd])->count()
+        );
 
         $totalRevenue = $revenue + $salesTotal;
 
-        // --- Receita Dia/Semana/Mês (corrigido: usa appointment_service) ---
+        // --- Receita Dia/Semana/Mês (cached 5min) ---
         $todayRange = [Carbon::today(), Carbon::today()->endOfDay()];
         $weekRange  = [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()];
         $monthRange = [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()];
 
-        $revenueDay = $this->revenueInRange($todayRange);
-        $revenueWeek = $this->revenueInRange($weekRange);
-        $revenueMonth = $this->revenueInRange($monthRange);
+        $revenueDay = Cache::remember('revenue_day_' . Carbon::today()->toDateString(), 300, fn() => $this->revenueInRange($todayRange));
+        $revenueWeek = Cache::remember('revenue_week_' . Carbon::now()->startOfWeek()->toDateString(), 300, fn() => $this->revenueInRange($weekRange));
+        $revenueMonth = Cache::remember('revenue_month_' . Carbon::now()->startOfMonth()->toDateString(), 300, fn() => $this->revenueInRange($monthRange));
 
         $salesDay = (float) Sale::whereBetween('created_at', $todayRange)->sum('total');
         $salesWeek = (float) Sale::whereBetween('created_at', $weekRange)->sum('total');
